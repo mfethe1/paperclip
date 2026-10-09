@@ -1,0 +1,29 @@
+# Secrets and credentials: never committed. See docs/SECURITY.md.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+master.key
+secrets/
+**/paperclip-claimed-api-key.json
+
+# Real host inventory (tailnet names, IPs, usernames). Only the example is tracked.
+fleet/hosts.json
+fleet/projects.json
+
+# Raw exports and migration scratch. Only reviewed, sanitized packages under
+# companies/ are committed; scripts/export-company.sh stages here first.
+exports/
+migration/out/
+
+# Paperclip runtime state if anyone runs an instance from this checkout.
+.paperclip/
+instances/
+
+# Tooling
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
