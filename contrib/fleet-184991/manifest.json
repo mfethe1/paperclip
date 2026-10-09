@@ -1,0 +1,344 @@
+{
+  "schema": "fleet-184991-publication-manifest/v1",
+  "program": "Paperclip executor/connector consolidation, thread 184991",
+  "upstream_base_commit": "60da145241700acf6d964395652f7e92f168f5c8",
+  "source_commits": {
+    "connector-admission (reviewed)": "4e789b8a01efa605dcd203380b4d64878bf2699c",
+    "connector-admission (rejected baseline)": "8d20d5fc8af7275fdc969f04b05c1423e4cc9619",
+    "executor-candidate": "0946287505960f2190e2d0192d5a4f6b56d4a007",
+    "runtime-candidate": "b1509436a5f1c22752fc1a631afdd8836deb967a"
+  },
+  "notes": [
+    "source paths are relative to the private program directory (withheld).",
+    "sanitized=true means the published file differs from the source only by removal of private host paths/identifiers; source_sha256 refers to the unsanitized original retained privately.",
+    "manifest.json and tests/ gate files are authored for this consolidation and have no source entry.",
+    "modified_from_source=true means the published file derives from the recorded source but carries functional changes beyond sanitization (executor decomposition, sidecar race fix, test reorganization); each such change is described in AUDIT.md and source_sha256 still records the reviewed original."
+  ],
+  "files": [
+    {
+      "path": "contrib/fleet-184991/AUDIT.md",
+      "sha256": "3615738379b744adeb57b72d4bb835c7d00d9d9105313023b1f7434096384923",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false,
+      "status": "authored-consolidation-doc"
+    },
+    {
+      "path": "contrib/fleet-184991/README.md",
+      "sha256": "fc34ee949440b41de10edfe65c75bd222970945e1cacfcaebdbc714e3b53e5a0",
+      "status": "authored-consolidation-doc",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission-rejected/README.md",
+      "sha256": "e03883d5539ff14c5f596ce1926f3f87084910c3882c47902224147afac251e8",
+      "status": "rejected-superseded-provenance-only",
+      "source": "connector-admission/README.md",
+      "source_sha256": "e03883d5539ff14c5f596ce1926f3f87084910c3882c47902224147afac251e8",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission-rejected/REJECTION.md",
+      "sha256": "22297d6897860bc1be90afb2130a3517354f1fa6b40ca21560bd842b81a2724b",
+      "status": "rejected-superseded-provenance-only",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission-rejected/admission.py",
+      "sha256": "df6c6347e0474808b7c3fa08f7d9b9b5da9d57eb1dfcaf3093360723fcc0a35d",
+      "status": "rejected-superseded-provenance-only",
+      "source": "connector-admission/admission.py",
+      "source_sha256": "df6c6347e0474808b7c3fa08f7d9b9b5da9d57eb1dfcaf3093360723fcc0a35d",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission-rejected/test_admission.py",
+      "sha256": "60d50e7e7f3ece22aa0958a153832eae5895c0224dec0d9badbd8ca5d70ee807",
+      "status": "rejected-superseded-provenance-only",
+      "source": "connector-admission/test_admission.py",
+      "source_sha256": "60d50e7e7f3ece22aa0958a153832eae5895c0224dec0d9badbd8ca5d70ee807",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission/README.md",
+      "sha256": "941ebf4b19102a6584c0e3381173e696b42064b9dc263e7067d00d124101751c",
+      "status": "reviewed-accept-admission-only",
+      "source": "connector-admission-revised/README.md",
+      "source_sha256": "941ebf4b19102a6584c0e3381173e696b42064b9dc263e7067d00d124101751c",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission/admission.py",
+      "sha256": "c5fc9e7c0b7da07a32406e0ffb8d51dbdb82ac8eeeb77ecb50bae989face44a2",
+      "status": "reviewed-accept-admission-only",
+      "source": "connector-admission-revised/admission.py",
+      "source_sha256": "c5fc9e7c0b7da07a32406e0ffb8d51dbdb82ac8eeeb77ecb50bae989face44a2",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission/test_admission.py",
+      "sha256": "60d50e7e7f3ece22aa0958a153832eae5895c0224dec0d9badbd8ca5d70ee807",
+      "status": "reviewed-accept-admission-only",
+      "source": "connector-admission-revised/test_admission.py",
+      "source_sha256": "60d50e7e7f3ece22aa0958a153832eae5895c0224dec0d9badbd8ca5d70ee807",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/connector-admission/test_revision.py",
+      "sha256": "7247528213a4e76075a4d1953ab4ee92af8db8c14016930842b7c93551158f7b",
+      "status": "reviewed-accept-admission-only",
+      "source": "connector-admission-revised/test_revision.py",
+      "source_sha256": "7247528213a4e76075a4d1953ab4ee92af8db8c14016930842b7c93551158f7b",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/docs/METHOD.md",
+      "sha256": "962129b903405fd058dd795d778f22536195c670a4801488defb336cbcb27c38",
+      "status": "authored-consolidation-doc",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/README.md",
+      "sha256": "3bd389f133ced07c091b931a3f370b485ee08199543feaa711dccc3fa4d01fea",
+      "status": "prototype-containment-unqualified",
+      "source": "executor/README.md",
+      "source_sha256": "6133759437f49ecfdac0fb5a82b14def189f1983417e924bc6b6a17a637d1701",
+      "sanitized": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/REMEDIATION.md",
+      "sha256": "e7007003addd24159174f72dabe6ef3e164d836cacd00b5ae9d0909330c3971b",
+      "status": "prototype-containment-unqualified",
+      "source": "executor/REMEDIATION.md",
+      "source_sha256": "cae22e9bdbd501936776ef8e571ab9721febb55b3396ebb10a6535e8cf9c8456",
+      "sanitized": false,
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/RESULT.md",
+      "sha256": "96886e9f4a26d1371d7ba3cba58ad0a7a0ece321532ef75f65b171c983661f5b",
+      "status": "prototype-containment-unqualified",
+      "source": "executor/RESULT.md",
+      "source_sha256": "b891f6010b6be96c41d95bbc55ef19f84737bcf8a33ad490ad6d9eea065a1df5",
+      "sanitized": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/client.py",
+      "sha256": "cdf173cec4ffedd8f6558647e0a804ef5ad093e4eb869fcea5d062122457d60c",
+      "status": "prototype-containment-unqualified",
+      "source": "executor/client.py",
+      "source_sha256": "cdf173cec4ffedd8f6558647e0a804ef5ad093e4eb869fcea5d062122457d60c",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/executor.py",
+      "sha256": "8b14759c2f5a6414c9a7715cf54b022c7b156fd47b77a4382f2399a68d5058f1",
+      "source": "executor/executor.py",
+      "source_sha256": "de58d1979167edb8c7eb6e4db5b64892948fb8a0a97e52fce15c14231a0c3aa8",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/executor_fixtures.py",
+      "sha256": "a22d59f66e4324de30d43ef33b9c2c3ac6665c2572b95cb2eb3c0d96d208835a",
+      "source": "executor/test_executor.py",
+      "source_sha256": "d3de08a7e6474c001f6d042c3e4cdd4ca436c2d273e6421c5b26399e49cb79a8",
+      "sanitized": true,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/executor_ledger.py",
+      "sha256": "7c4f9b8f5523c47d086dd64e521290f752a7d93333c246e5932891e02b6735ad",
+      "source": "executor/executor.py",
+      "source_sha256": "de58d1979167edb8c7eb6e4db5b64892948fb8a0a97e52fce15c14231a0c3aa8",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/executor_protocol.py",
+      "sha256": "c4bc53dc6bbd123a5c5cf26ee75552d81892370c5c2843326782516c7b8406f3",
+      "source": "executor/executor.py",
+      "source_sha256": "de58d1979167edb8c7eb6e4db5b64892948fb8a0a97e52fce15c14231a0c3aa8",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/probe_runner.py",
+      "sha256": "596a8c27b12ad3c27f4c12dcbaa3e401eecac78121bba38040c30ca83f854a67",
+      "status": "prototype-containment-unqualified",
+      "source": "executor/probe_runner.py",
+      "source_sha256": "15f79c85fd5d7390709bfb04c6f4b363986bbbbabc6105554e873d61c53f3743",
+      "sanitized": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/security.py",
+      "sha256": "537ab860f0c388665b280239b4dd515495e8a803f0eda2880161c8e98f4dce4c",
+      "source": "executor/security.py",
+      "source_sha256": "23cb830f88018d3e51bdbc9ec7324bd7a047a47a10960ccf79214f1cbe24f592",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_contract.py",
+      "sha256": "c09befee8729513529687fed8efc13343ffcf5fbcf32274096a9b8b6fc46e966",
+      "source": "executor/test_executor.py",
+      "source_sha256": "d3de08a7e6474c001f6d042c3e4cdd4ca436c2d273e6421c5b26399e49cb79a8",
+      "sanitized": true,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_ledger.py",
+      "sha256": "ed2f183c35d664535955a7ee8446fb0a34e7b4e16af64d37ae0b7f4fc0630ced",
+      "source": "executor/test_executor.py",
+      "source_sha256": "d3de08a7e6474c001f6d042c3e4cdd4ca436c2d273e6421c5b26399e49cb79a8",
+      "sanitized": true,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_process.py",
+      "sha256": "dd14f6ddc1c3b91fbd7e1c9166198d8c3a6330c0df158d5d28c35de14b372b02",
+      "source": "executor/test_executor.py",
+      "source_sha256": "d3de08a7e6474c001f6d042c3e4cdd4ca436c2d273e6421c5b26399e49cb79a8",
+      "sanitized": true,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_protocol.py",
+      "sha256": "1982aa5caeac4b20607ccf785104d7f8d9cb28efb5aad337787412cfe307220e",
+      "source": "executor/test_executor.py",
+      "source_sha256": "d3de08a7e6474c001f6d042c3e4cdd4ca436c2d273e6421c5b26399e49cb79a8",
+      "sanitized": true,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_remediation_status.py",
+      "sha256": "e88aacf69d67ddad342480a56137e55b75f4425b211a00d2080ce4489f10ae1d",
+      "source": "executor/test_remediation.py",
+      "source_sha256": "94b11e17d2647e07668495b8c3705453a5244edb648171885df87a02a9b5e990",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_remediation_storage.py",
+      "sha256": "699ac22c061dfdaee5bec37c6287e8348e7666d8e95a7aaeaf93bb4b214f8f74",
+      "source": "executor/test_remediation.py",
+      "source_sha256": "94b11e17d2647e07668495b8c3705453a5244edb648171885df87a02a9b5e990",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_remediation_terminal.py",
+      "sha256": "06387a49b35bc28f60e2506f1a3e80e3f375cb4760dd0048ec349b6735f32b8b",
+      "source": "executor/test_remediation.py",
+      "source_sha256": "94b11e17d2647e07668495b8c3705453a5244edb648171885df87a02a9b5e990",
+      "sanitized": false,
+      "status": "prototype-containment-unqualified",
+      "modified_from_source": true
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/test_sidecar.py",
+      "sha256": "75c2d50954b56abf8b2a3aaa10ec616ed794a0feaff9b0e880fbff23cdcc0465",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false,
+      "status": "prototype-containment-unqualified"
+    },
+    {
+      "path": "contrib/fleet-184991/executor-candidate/verify.py",
+      "sha256": "be4f8893a94dc0e4dd04e1428336721a498f99e19d2086681d71be4554d4041a",
+      "status": "prototype-containment-unqualified",
+      "source": "executor/verify.py",
+      "source_sha256": "be4f8893a94dc0e4dd04e1428336721a498f99e19d2086681d71be4554d4041a",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/ruff.toml",
+      "sha256": "52627c22cb0c544f2e81e7364397318d0e79730b92946106cac50f661ad0a23a",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false,
+      "status": "authored"
+    },
+    {
+      "path": "contrib/fleet-184991/runtime-candidate/RUNTIME-RESULT.md",
+      "sha256": "f1f7dab8836eb0c776b9ab0bd1dd79ebf18884ae75e91d772419a7679e972cfa",
+      "status": "prototype-vm-unprovisioned",
+      "source": "runtime/RUNTIME-RESULT.md",
+      "source_sha256": "2b8d084bd947cc7e43494af2f821983465384a875c6d1b09e76c4595bb82ab3f",
+      "sanitized": true
+    },
+    {
+      "path": "contrib/fleet-184991/runtime-candidate/guest.py",
+      "sha256": "334141deeecbcd793040818bc1ddc71c5041e333c355930607a09b948b729937",
+      "status": "prototype-vm-unprovisioned",
+      "source": "runtime/guest.py",
+      "source_sha256": "334141deeecbcd793040818bc1ddc71c5041e333c355930607a09b948b729937",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/runtime-candidate/qualification_tests.py",
+      "sha256": "11d362b740800ebaec67c1b1eedec513a25b850a2d35a8f14b2b89b2115203c0",
+      "status": "prototype-vm-unprovisioned",
+      "source": "runtime/qualification_tests.py",
+      "source_sha256": "51a17597c8f0eb2831dee3828a4ae66e18404b2612061ae1b1bba8760de6fcc8",
+      "sanitized": true
+    },
+    {
+      "path": "contrib/fleet-184991/runtime-candidate/runtime.py",
+      "sha256": "f49bc4fb55a8c2701d338f8716fcb3e380a3ce70f35407b37408842b6ff6064d",
+      "status": "prototype-vm-unprovisioned",
+      "source": "runtime/runtime.py",
+      "source_sha256": "599880a3b8e12c534317044a88b524616430493f34b077895f19c1ca2ed30d83",
+      "sanitized": true
+    },
+    {
+      "path": "contrib/fleet-184991/runtime-candidate/test_runtime.py",
+      "sha256": "b046bf1e3b5680cabf14b04984d8bbd239263da380c58c22a55657a535192487",
+      "status": "prototype-vm-unprovisioned",
+      "source": "runtime/test_runtime.py",
+      "source_sha256": "b046bf1e3b5680cabf14b04984d8bbd239263da380c58c22a55657a535192487",
+      "sanitized": false
+    },
+    {
+      "path": "contrib/fleet-184991/scripts/paperclip-dev-start.sh",
+      "sha256": "95d806c6b79241d928d57df85c0b14e01ca940627c7785c5db6db3740cc73a64",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false,
+      "status": "authored-sanitized-script"
+    },
+    {
+      "path": "contrib/fleet-184991/scripts/paperclip-dev-stop.sh",
+      "sha256": "5da453a951e0540df57e03c515bd610912897ebaff06ddd6f1588339abb88488",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false,
+      "status": "authored-sanitized-script"
+    },
+    {
+      "path": "contrib/fleet-184991/tests/test_dev_scripts.py",
+      "sha256": "df7f3c70b85def89a93fe4cd1dac2d1dddec0a882b1d7a3f948b57aba44ad8bc",
+      "source": null,
+      "source_sha256": null,
+      "sanitized": false,
+      "status": "authored-gate-test"
+    }
+  ]
+}
