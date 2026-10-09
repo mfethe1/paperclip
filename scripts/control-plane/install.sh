@@ -44,15 +44,16 @@ SHORT="${FQDN%%.*}"
 log "control plane host: $FQDN"
 
 # 1. Managed, pinned CLI install (atomic switch, keeps two rollbacks).
-if [[ "$(paperclipai --version 2>/dev/null || true)" != "$PAPERCLIP_VERSION" ]]; then
+export PATH="$HOME/.local/bin:$PATH"   # managed shim location
+if [[ "$(paperclip_cli_version)" != "$PAPERCLIP_VERSION" ]]; then
   log "installing paperclipai ${PAPERCLIP_VERSION} into the managed CLI store"
   # Runs under the Node 24 that ensure_node24 put first on PATH; the managed shim
   # (~/.local/bin/paperclipai) pins that Node for the CLI and the LaunchAgent.
   run npx -y "paperclipai@${PAPERCLIP_VERSION}" install --version "$PAPERCLIP_VERSION"
   export PATH="$HOME/.local/bin:$PATH"
 fi
-[[ "$DRY_RUN" == "1" ]] || [[ "$(paperclipai --version)" == "$PAPERCLIP_VERSION" ]] \
-  || die "paperclipai on PATH is $(paperclipai --version), expected $PAPERCLIP_VERSION (is ~/.local/bin on PATH?)"
+[[ "$DRY_RUN" == "1" ]] || [[ "$(paperclip_cli_version)" == "$PAPERCLIP_VERSION" ]] \
+  || die "paperclipai on PATH ($(command -v paperclipai || echo none)) reports '$(paperclip_cli_version)', expected $PAPERCLIP_VERSION"
 
 # 2. Instance config: create on first run, otherwise reconcile.
 CONFIG="$(paperclip_config_path)"

@@ -149,10 +149,16 @@ ensure_node24() {
   log "using Node $("$node24" -v) from $bindir for Paperclip (default node unchanged: ${current})"
 }
 
+# Version of the paperclipai on PATH, or empty. A managed install prints extra
+# detail after the number ("2026.1005.0 (managed npm pinned; payload ...)").
+paperclip_cli_version() {
+  command -v paperclipai >/dev/null 2>&1 || return 0
+  paperclipai --version 2>/dev/null | awk 'NR==1 {print $1}' || true
+}
+
 # Paperclip CLI pinned to the fleet version, regardless of what's on PATH.
 pc() {
-  if command -v paperclipai >/dev/null 2>&1 \
-     && [[ "$(paperclipai --version 2>/dev/null)" == "$PAPERCLIP_VERSION" ]]; then
+  if [[ "$(paperclip_cli_version)" == "$PAPERCLIP_VERSION" ]]; then
     paperclipai "$@"
   else
     ensure_node24
