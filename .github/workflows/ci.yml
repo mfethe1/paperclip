@@ -1,0 +1,85 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml shellcheck-py
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate company packages
+        run: python tools/validate_company.py
+      - name: Shellcheck
+        run: shellcheck scripts/*.sh scripts/*/*.sh
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Import companies/fleet into the pinned Paperclip release, the same way
+  # scripts/import-company.py does on Mack, and check the result.
+  import-smoke:
+    runs-on: ubuntu-latest
+    env:
+      DO_NOT_TRACK: "1"
+      PAPERCLIP_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml
+      - name: Install pinned Paperclip
+        run: |
+          version="$(sed -n 's/^PAPERCLIP_VERSION="${PAPERCLIP_VERSION:-\(.*\)}"$/\1/p' scripts/lib/common.sh)"
+          test -n "$version"
+          npm install -g "paperclipai@${version}"
+          paperclipai --version
+      - name: Start a throwaway instance
+        run: |
+          paperclipai onboard --yes --no-install-service -d "$RUNNER_TEMP/pc" > "$RUNNER_TEMP/server.log" 2>&1 &
+          for _ in $(seq 1 120); do
+            curl -fsS http://127.0.0.1:3100/api/health >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:3100/api/health | jq '{status, version}'
+      - name: Import companies/fleet (dry run, then real)
+        run: |
+          python scripts/import-company.py companies/fleet --dry-run > preview.json
+          jq -e '(.errors // []) | length == 0' preview.json
+          python scripts/import-company.py companies/fleet | tee import.log
+      - name: Check the imported company
+        run: |
+          api=http://127.0.0.1:3100/api
+          cid="$(curl -fsS $api/companies | jq -r '.[] | select(.name == "Fleet") | .id')"
+          test -n "$cid"
+          agents="$(curl -fsS $api/companies/$cid/agents)"
+          echo "$agents" | jq -e 'length == 4 and all(.status == "paused")'
+          echo "$agents" | jq -e '[.[] | select(.reportsTo == null)] | length == 1'
+          curl -fsS $api/companies/$cid/routines | jq -e 'length == 2 and all(.status == "paused")'
+          curl -fsS $api/companies/$cid/projects | jq -e 'length == 3'
+          curl -fsS "$api/companies/$cid/issues" | jq -e 'length == 3'
+      - name: Server log on failure
+        if: failure()
+        run: tail -200 "$RUNNER_TEMP/server.log" || true

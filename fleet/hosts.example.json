@@ -1,0 +1,51 @@
+{
+  "_comment": "Copy to fleet/hosts.json (gitignored) and fill in. 'dns' is the MagicDNS short name from `tailscale status`; aliases are what agents and docs use.",
+  "tailnet_suffix": "tailXXXXXX.ts.net",
+  "control_plane": {
+    "host": "mack",
+    "port": 3100,
+    "_url_note": "optional: \"url\" overrides https://<dns>.<suffix>:<port>"
+  },
+  "hosts": {
+    "mack": {
+      "dns": "<mack-magicdns-name>",
+      "os": "macos",
+      "role": "control plane, durable execution",
+      "always_on": true,
+      "gateways": {
+        "hermes": 8642
+      }
+    },
+    "rosie": {
+      "dns": "<rosie-magicdns-name>",
+      "os": "macos",
+      "role": "OpenClaw integrations, home automation",
+      "always_on": true,
+      "gateways": {
+        "openclaw": 443
+      }
+    },
+    "winnie": {
+      "dns": "<winnie-magicdns-name>",
+      "os": "windows",
+      "role": "GPU inference, Windows tasks, storage",
+      "always_on": true,
+      "gateways": {},
+      "_gateways_note": "a gateway may be a Serve port number or a full base URL, e.g. \"https://<winnie>.<suffix>/ollama\""
+    },
+    "airy": {
+      "dns": "<airy-magicdns-name>",
+      "os": "macos",
+      "role": "operator laptop (not durable)",
+      "always_on": false,
+      "gateways": {}
+    },
+    "lenny": {
+      "dns": "<lenny-magicdns-name>",
+      "os": "linux",
+      "role": "spare, read-only probes",
+      "always_on": false,
+      "gateways": {}
+    }
+  }
+}

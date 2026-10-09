@@ -1,0 +1,94 @@
+schema: paperclip/v1
+# Bundle format version read by Paperclip >= 2026.1005.0 (company-portability BUNDLE_SCHEMA_VERSION).
+schemaVersion: 7
+
+company:
+  # Hires (including remote agents joining from other hosts) need the board.
+  requireBoardApprovalForNewAgents: true
+
+# Agents that run on the control-plane host itself. Agents on other hosts
+# (Hermes / OpenClaw gateways) join through the invite flow in docs/RUNBOOK.md,
+# because their URLs and keys are host-specific and must not be committed.
+#
+# cwd and model are intentionally unset: Paperclip falls back to its managed
+# workspace and the adapter's default model, and the package stays free of
+# machine-local paths. Set them per agent in the board after import if needed.
+agents:
+  chief-of-staff:
+    adapter:
+      type: claude_local
+    permissions:
+      canCreateAgents: false
+      canCreateSkills: false
+  builder:
+    adapter:
+      type: claude_local
+    permissions:
+      canCreateAgents: false
+    inputs:
+      env:
+        GH_TOKEN:
+          kind: secret
+          requirement: optional
+          description: Push branches and open PRs. Bind a fine-grained token scoped to the repos this agent works on.
+  verifier:
+    adapter:
+      type: codex_local
+    permissions:
+      canCreateAgents: false
+      canCreateSkills: false
+    inputs:
+      env:
+        GH_TOKEN:
+          kind: secret
+          requirement: optional
+          description: Read PRs and post reviews. Read-only scopes are enough.
+  fleet-ops:
+    adapter:
+      type: claude_local
+    permissions:
+      canCreateAgents: false
+      canCreateSkills: false
+
+projects:
+  control-plane:
+    status: in_progress
+    workspaces:
+      paperclip:
+        name: paperclip
+        sourceType: git_repo
+        repoUrl: https://github.com/mfethe1/paperclip
+        defaultRef: main
+        isPrimary: true
+  fleet-operations:
+    status: in_progress
+  intake:
+    status: in_progress
+
+tasks:
+  import-mack-work:
+    priority: high
+  connect-remote-agents:
+    priority: high
+  decide-task-authority:
+    priority: high
+
+# Imported routines land paused; activate them from the board once the agents
+# they target are verified working. Schedules use off-the-hour minutes.
+routines:
+  daily-fleet-check:
+    concurrencyPolicy: skip_if_active
+    catchUpPolicy: skip_missed
+    triggers:
+      - kind: schedule
+        label: Daily 06:47 ET
+        cronExpression: "47 6 * * *"
+        timezone: America/New_York
+  weekly-portfolio-review:
+    concurrencyPolicy: skip_if_active
+    catchUpPolicy: skip_missed
+    triggers:
+      - kind: schedule
+        label: Mondays 07:52 ET
+        cronExpression: "52 7 * * 1"
+        timezone: America/New_York
