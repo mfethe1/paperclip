@@ -17,10 +17,26 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pcyaml  # noqa: E402
+
+# PyYAML is optional: stock macOS python3 doesn't ship it. Without it, files are
+# read with the port of Paperclip's own parser and the standard-YAML cross-check is
+# skipped (CI always has PyYAML and runs it).
+try:
+    import yaml
+    YAMLError = yaml.YAMLError
+except ImportError:  # pragma: no cover - exercised on bare python3
+    yaml = None
+
+    class YAMLError(Exception):
+        pass
+
+_warned_no_yaml = False
+
+
+def _load(raw: str):
+    return yaml.safe_load(raw) if yaml is not None else pcyaml.parse(raw)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -73,9 +89,16 @@ def _normalize(value):
 
 
 def check_paperclip_reads_same(report: "Report", path: Path, raw: str) -> None:
+    global _warned_no_yaml
+    if yaml is None:
+        if not _warned_no_yaml:
+            print("note: PyYAML not installed; skipped the standard-YAML cross-check (CI runs it)",
+                  file=sys.stderr)
+            _warned_no_yaml = True
+        return
     try:
         expected = _normalize(yaml.safe_load(raw) or {})
-    except yaml.YAMLError as exc:
+    except YAMLError as exc:
         report.error(path, f"invalid YAML: {exc}")
         return
     actual = _normalize(pcyaml.parse(raw))
@@ -91,7 +114,7 @@ def parse_frontmatter(path: Path) -> tuple[dict, str]:
     end = text.find("\n---", 4)
     if end == -1:
         raise ValueError("unterminated frontmatter")
-    data = yaml.safe_load(text[4:end]) or {}
+    data = _load(text[4:end]) or {}
     if not isinstance(data, dict):
         raise ValueError("frontmatter is not a mapping")
     return data, text[end + 4:].lstrip("\n")
@@ -160,7 +183,7 @@ def validate_package(root: Path) -> Report:
 
     try:
         company, _ = parse_frontmatter(company_md)
-    except (ValueError, yaml.YAMLError) as exc:
+    except (ValueError, YAMLError) as exc:
         report.error(company_md, f"bad frontmatter: {exc}")
         return report
     for field in ("name", "slug", "description", "schema"):
@@ -175,7 +198,7 @@ def validate_package(root: Path) -> Report:
     for path in sorted(root.glob("agents/*/AGENTS.md")):
         try:
             fm, body = parse_frontmatter(path)
-        except (ValueError, yaml.YAMLError) as exc:
+        except (ValueError, YAMLError) as exc:
             report.error(path, f"bad frontmatter: {exc}")
             continue
         slug = slug_for(path, fm)
@@ -216,7 +239,7 @@ def validate_package(root: Path) -> Report:
     for path in sorted(root.glob("skills/*/SKILL.md")):
         try:
             fm, body = parse_frontmatter(path)
-        except (ValueError, yaml.YAMLError) as exc:
+        except (ValueError, YAMLError) as exc:
             report.error(path, f"bad frontmatter: {exc}")
             continue
         name = fm.get("name")
@@ -237,7 +260,7 @@ def validate_package(root: Path) -> Report:
     for path in sorted(root.glob("projects/*/PROJECT.md")):
         try:
             fm, _ = parse_frontmatter(path)
-        except (ValueError, yaml.YAMLError) as exc:
+        except (ValueError, YAMLError) as exc:
             report.error(path, f"bad frontmatter: {exc}")
             continue
         slug = slug_for(path, fm)
@@ -252,7 +275,7 @@ def validate_package(root: Path) -> Report:
     for path in sorted(list(root.glob("tasks/*/TASK.md")) + list(root.glob("projects/*/tasks/*/TASK.md"))):
         try:
             fm, body = parse_frontmatter(path)
-        except (ValueError, yaml.YAMLError) as exc:
+        except (ValueError, YAMLError) as exc:
             report.error(path, f"bad frontmatter: {exc}")
             continue
         slug = slug_for(path, fm)
@@ -273,8 +296,8 @@ def validate_package(root: Path) -> Report:
     ext_path = root / ".paperclip.yaml"
     if ext_path.is_file():
         try:
-            ext = yaml.safe_load(ext_path.read_text(encoding="utf-8")) or {}
-        except yaml.YAMLError as exc:
+            ext = _load(ext_path.read_text(encoding="utf-8")) or {}
+        except YAMLError as exc:
             report.error(ext_path, f"invalid YAML: {exc}")
             ext = {}
         if ext.get("schema") != "paperclip/v1":

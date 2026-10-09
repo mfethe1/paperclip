@@ -104,8 +104,20 @@ if has codex; then
   else row "Codex" warn "$(codex --version 2>/dev/null | head -1), no login found: run codex login"; fi
 else row "Codex" warn "not installed: the Verifier agent uses it"; fi
 
+# Project repos: agent runs in a project use a managed checkout of its repo; the
+# clone runs as this user, so it must work here without prompting.
+pkg="${PAPERCLIP_PACKAGE:-$REPO_ROOT/companies/fleet}"
+while IFS= read -r url; do
+  [[ -n "$url" ]] || continue
+  if out="$(GIT_TERMINAL_PROMPT=0 git ls-remote --heads "$url" 2>&1 >/dev/null)"; then
+    row "clone access: ${url##*/}" ok "git ls-remote works as $(id -un)"
+  else
+    row "clone access: ${url##*/}" FAIL "$(printf '%s\n' "$out" | tail -1)"
+  fi
+done < <(python3 -I "$REPO_ROOT/tools/package_repos.py" "$pkg" 2>/dev/null)
+
 # OpenClaw on this host
-code="$(curl -s -o /dev/null -m 3 -w '%{http_code}' "http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}/" 2>/dev/null || echo 000)"
+code="$(http_code "http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}/" 3)"
 if [[ "$code" != "000" ]]; then row "OpenClaw gateway" ok "listening on 127.0.0.1:${OPENCLAW_GATEWAY_PORT}"
 else row "OpenClaw gateway" ok "not on this host"; fi
 

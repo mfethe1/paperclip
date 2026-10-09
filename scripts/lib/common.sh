@@ -74,13 +74,22 @@ serve_https() {
   run "$ts" serve --bg --https="${port}" "http://127.0.0.1:${target_port}"
 }
 
+# HTTP status of an anonymous GET, or 000 when unreachable. (curl already prints
+# 000 on connection failure, so `|| echo 000` would yield "000000".)
+http_code() {
+  local code
+  code="$(curl -s -o /dev/null -m "${2:-10}" -w '%{http_code}' "$1" 2>/dev/null || true)"
+  printf '%s\n' "${code:-000}"
+}
+
 # Fleet rule: nothing on the tailnet answers 200 without credentials.
 assert_requires_auth() {
   local url="$1" code
-  code="$(curl -sS -o /dev/null -w '%{http_code}' "$url" || echo 000)"
-  if [[ "$code" == "200" ]]; then
-    die "$url answered 200 without credentials; do not join it until auth is on"
-  fi
+  code="$(http_code "$url")"
+  case "$code" in
+    200) die "$url answered 200 without credentials; do not join it until auth is on" ;;
+    000) die "could not reach $url to verify that it requires auth" ;;
+  esac
   log "$url without credentials -> HTTP $code (ok, not 200)"
 }
 
@@ -147,6 +156,41 @@ ensure_node24() {
   bindir="$(dirname "$node24")"
   export PATH="$bindir:$PATH"
   log "using Node $("$node24" -v) from $bindir for Paperclip (default node unchanged: ${current})"
+}
+
+# Rewrite Paperclip's managed launcher (~/.local/bin/paperclipai), which is what the
+# LaunchAgent runs, in the same managed format the CLI recognizes, so that:
+#  - it pins Homebrew's stable opt/node@24 path rather than the versioned Cellar
+#    path that `brew upgrade` + cleanup deletes;
+#  - the server and every agent it spawns find `claude` (~/.local/bin) and
+#    `codex`/`gh` (Homebrew bin); launchd's default PATH has neither.
+# `paperclipai install`/`update` rewrite the shim, so install.sh re-runs this every time.
+# Usage: repin_managed_shim [node]   (explicit node path: tests and non-macOS hosts)
+repin_managed_shim() {
+  local target_node="${1:-}" shim marker node entry stable brew_prefix opt pathval tmp
+  if [[ -z "$target_node" && "$(uname -s)" != "Darwin" ]]; then return 0; fi
+  shim="$HOME/.local/bin/paperclipai"
+  marker="# paperclipai managed install shim v1"
+  [[ -f "$shim" ]] || die "no managed paperclipai launcher at $shim"
+  [[ "$(sed -n 2p "$shim")" == "$marker" ]] || die "$shim is not Paperclip's managed launcher; refusing to edit it"
+  node="$(sed -n "s/^exec '\([^']*\)' .*/\1/p" "$shim")"
+  entry="$(sed -n "s/^exec '[^']*' '\([^']*\)' .*/\1/p" "$shim")"
+  [[ -n "$node" && -n "$entry" ]] || die "could not parse $shim"
+  stable="${target_node:-$node}"
+  brew_prefix=""
+  if command -v brew >/dev/null 2>&1; then brew_prefix="$(brew --prefix 2>/dev/null || true)"; fi
+  if [[ -z "$target_node" && "$node" == */Cellar/node@24/* && -n "$brew_prefix" ]]; then
+    opt="$(brew --prefix node@24 2>/dev/null || true)/bin/node"
+    if node_ok "$opt"; then stable="$opt"; fi
+  fi
+  pathval="$(dirname "$stable"):$HOME/.local/bin:${brew_prefix:-/opt/homebrew}/bin:/usr/local/bin"
+  case "$pathval$stable$entry" in *"'"*) die "unexpected quote in a path; not rewriting $shim" ;; esac
+  tmp="$shim.tmp.$$"
+  printf '%s\n' '#!/bin/sh' "$marker" 'set -eu' \
+    "export PATH='$pathval':\"\${PATH:-/usr/local/bin:/usr/bin:/bin}\"" \
+    "exec '$stable' '$entry' \"\$@\"" > "$tmp"
+  chmod 755 "$tmp"
+  mv -f "$tmp" "$shim"
 }
 
 # Version of the paperclipai on PATH, or empty. A managed install prints extra

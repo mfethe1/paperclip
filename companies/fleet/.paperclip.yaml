@@ -10,9 +10,11 @@ company:
 # (Hermes / OpenClaw gateways) join through the invite flow in docs/RUNBOOK.md,
 # because their URLs and keys are host-specific and must not be committed.
 #
-# cwd and model are intentionally unset: Paperclip falls back to its managed
-# workspace and the adapter's default model, and the package stays free of
-# machine-local paths. Set them per agent in the board after import if needed.
+# cwd and model are intentionally unset. Issues in a project with a repo workspace run
+# in Paperclip's managed checkout of that repo, which the board host must be able to
+# clone as the service user, or the run fails with workspace_validation_failed
+# (scripts/control-plane/preflight.sh checks this). Issues outside a project run in
+# the agent's managed home. The model falls back to the adapter default.
 agents:
   chief-of-staff:
     adapter:

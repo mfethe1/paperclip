@@ -49,7 +49,9 @@ NEED: decisions or access you're waiting on (or "nothing")
 - Acceptance criteria come first. If the issue has none, write them and get them
   confirmed before you implement.
 - Never mark your own work accepted. Review stages route to a different agent, and
-  approval stages route to the board.
+  approval stages route to the board. Those stages exist only if the issue has an
+  execution policy. If an issue you are about to finish has none, ask the Chief of
+  Staff to set one rather than closing it yourself.
 - Track these as separate states: **implemented → pushed → reviewed → merged →
   deployed → accepted**. Say which one you reached.
 - Evidence is something a reviewer can rerun: the exact command and its output, a commit

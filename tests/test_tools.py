@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import io
+import json
+import os
 import shutil
 import subprocess
 import sys
@@ -30,6 +33,8 @@ def load_script(name: str, path: Path):
 
 
 build_overlay = load_script("build_overlay", ROOT / "scripts" / "migrate" / "build-overlay.py")
+import_company = load_script("import_company", ROOT / "scripts" / "import-company.py")
+package_repos = load_script("package_repos", ROOT / "tools" / "package_repos.py")
 normalize_export = load_script("normalize_export", ROOT / "tools" / "normalize_export.py")
 
 
@@ -200,7 +205,94 @@ class NormalizeExportTest(unittest.TestCase):
             self.assertEqual(list(ext["tasks"]), ["daily"])
 
 
+class ImportCompanyTest(unittest.TestCase):
+    """Network calls are replaced; these check the decisions the script makes."""
+
+    def run_main(self, argv, companies=(), preview=None, env=None):
+        calls = []
+        preview = preview or {"plan": {}, "envInputs": [
+            {"key": "GH_TOKEN", "agentSlug": "builder", "kind": "secret", "requirement": "optional"}]}
+
+        def fake_get(url, key):
+            calls.append(("GET", url, None))
+            if url.endswith("/api/companies"):
+                return list(companies)
+            return []
+
+        def fake_post(url, body, key):
+            calls.append(("POST", url, json.loads(json.dumps(body))))  # snapshot: body is mutated later
+            if url.endswith("/preview"):
+                return preview
+            return {"company": {"name": "Fleet", "id": "c1", "action": "created"}}
+
+        old = (import_company.get, import_company.post, sys.argv)
+        import_company.get, import_company.post = fake_get, fake_post
+        sys.argv = ["import-company.py", str(ROOT / "companies" / "fleet"), "--api-base", "http://x"] + argv
+        env_backup = dict(os.environ)
+        os.environ.update(env or {})
+        devnull = open(os.devnull, "w")  # the validator subprocess needs a real fd
+        try:
+            with redirect_stdout(io.StringIO()), contextlib.redirect_stderr(devnull):
+                try:
+                    code = import_company.main()
+                except SystemExit as exc:
+                    code = exc.code
+        finally:
+            devnull.close()
+            import_company.get, import_company.post, sys.argv = old
+            os.environ.clear()
+            os.environ.update(env_backup)
+        return code, calls
+
+    def test_refuses_duplicate_company_name(self):
+        code, calls = self.run_main([], companies=[{"name": "Fleet", "id": "abc"}])
+        self.assertEqual(code, 2)
+        self.assertFalse(any(c[0] == "POST" and c[1].endswith("/api/companies/import") for c in calls))
+
+    def test_secret_values_only_on_real_import(self):
+        env = {"GH_TOKEN_BUILDER": "s3cret"}
+        code, calls = self.run_main(["--secret-env", "agent:builder:GH_TOKEN=GH_TOKEN_BUILDER"], env=env)
+        self.assertEqual(code, 0)
+        real = [c for c in calls if c[1].endswith("/api/companies/import")]
+        preview = [c for c in calls if c[1].endswith("/preview")]
+        self.assertEqual(real[0][2]["secretValues"], {"agent:builder:GH_TOKEN": "s3cret"})
+        self.assertTrue(real[0][2]["pauseAutomations"])
+        self.assertNotIn("secretValues", preview[0][2])
+
+    def test_refuses_unmet_required_input(self):
+        preview = {"plan": {}, "envInputs": [
+            {"key": "API_KEY", "agentSlug": "builder", "kind": "secret", "requirement": "required"}]}
+        code, calls = self.run_main([], preview=preview)
+        self.assertEqual(code, 2)
+        self.assertFalse(any(c[1].endswith("/api/companies/import") for c in calls))
+
+    def test_include_keys_are_explicit(self):
+        code, calls = self.run_main(["--company-id", "c1", "--include", "projects,issues", "--collision", "skip"])
+        body = [c for c in calls if c[1].endswith("/api/companies/import")][0][2]
+        self.assertEqual(body["include"], {"agents": False, "company": False, "issues": True,
+                                           "projects": True, "skills": False})
+
+
+class PackageReposTest(unittest.TestCase):
+    def test_lists_workspace_repo_urls(self):
+        self.assertEqual(package_repos.repo_urls(ROOT / "companies" / "fleet"),
+                         ["https://github.com/mfethe1/paperclip"])
+
+
 class CliTest(unittest.TestCase):
+    def test_validator_runs_without_pyyaml(self):
+        with tempfile.TemporaryDirectory() as d:
+            venv = Path(d) / "bare"
+            made = subprocess.run([sys.executable, "-m", "venv", "--without-pip", str(venv)],
+                                  capture_output=True)
+            if made.returncode != 0:
+                self.skipTest("venv unavailable")
+            bare = venv / "bin" / "python"
+            r = subprocess.run([str(bare), "-I", str(ROOT / "tools" / "validate_company.py")],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("PyYAML not installed", r.stderr)
+
     def test_validator_cli_exit_codes(self):
         ok = subprocess.run([sys.executable, str(ROOT / "tools" / "validate_company.py")],
                             capture_output=True, text=True)

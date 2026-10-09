@@ -53,19 +53,31 @@ listener_scope() {
 case "$kind" in
   hermes)
     target="$HERMES_GATEWAY_PORT"
-    code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${target}/health" || echo 000)"
+    code="$(http_code "http://127.0.0.1:${target}/health")"
     [[ "$code" == "200" ]] || die "Hermes API server not answering on 127.0.0.1:${target} (HTTP $code).
 Start it with API_SERVER_ENABLED=true and API_SERVER_KEY set (see docs/RUNBOOK.md, 'Join a host: Hermes')."
     scope="$(listener_scope "$target" || true)"
     if [[ -n "$scope" && "$scope" != "127.0.0.1" && "$scope" != "localhost" ]]; then
       warn "Hermes is listening on '$scope', not loopback only. Bind it to 127.0.0.1; Serve provides tailnet access."
     fi
+    # Prove auth locally BEFORE anything is published to the tailnet.
+    assert_requires_auth "http://127.0.0.1:${target}/v1/capabilities"
     [[ -n "$port" ]] || port="$(serve_port_for_target "$target")"
     [[ -n "$port" ]] || port="$target"
     serve_https "$port" "$target"
     url="https://${FQDN}:${port}"
-    [[ "$port" == "443" ]] && url="https://${FQDN}"
-    [[ "$DRY_RUN" == "1" ]] || assert_requires_auth "$url/v1/capabilities"
+    if [[ "$port" == "443" ]]; then url="https://${FQDN}"; fi
+    if [[ "$DRY_RUN" != "1" ]]; then
+      remote="$(http_code "$url/v1/capabilities")"
+      if [[ "$remote" == "200" ]]; then
+        "$TS" serve --https="$port" off >/dev/null 2>&1 || true
+        die "$url answered 200 without credentials through Serve; unpublished it again"
+      elif [[ "$remote" == "000" ]]; then
+        warn "could not reach $url from this host (often hairpin NAT); verify from another node with scripts/fleet-check.sh"
+      else
+        log "$url/v1/capabilities without credentials -> HTTP $remote (ok, not 200)"
+      fi
+    fi
     cat <<EOF
 
 Hermes gateway published.
@@ -76,7 +88,7 @@ EOF
     ;;
   openclaw)
     target="$OPENCLAW_GATEWAY_PORT"
-    code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${target}/" || echo 000)"
+    code="$(http_code "http://127.0.0.1:${target}/")"
     [[ "$code" != "000" ]] || die "OpenClaw gateway not listening on 127.0.0.1:${target}"
     cfg="$HOME/.openclaw/openclaw.json"
     if [[ -f "$cfg" ]]; then

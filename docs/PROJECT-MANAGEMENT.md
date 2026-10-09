@@ -41,7 +41,11 @@ verified at the expected commit.
 
 ## Review and approval (execution policy)
 
-Paperclip's execution policy enforces what the fleet previously did by convention:
+Paperclip's execution policy enforces what the fleet previously did by convention, **but
+only on issues that carry one.** The policy is a field on each issue. Projects have no
+default, child issues don't inherit it, and the company package can't carry it. The
+Chief of Staff therefore sets it at triage, whenever it assigns an issue (see its
+instructions). The shape is in upstream's `docs/guides/execution-policy.md`.
 
 | Work type | Policy |
 |---|---|
@@ -73,7 +77,7 @@ failures the issue is blocked; after three review rounds the Chief of Staff re-p
 | Kanban `running` card = hard claim | Issue checkout |
 | Buzz registry `REG-N`, feature IDs (`FLEET-LEARNING-001`) | Keep the old ID in the issue title or body for search; the issue key is `FLE-<n>` |
 | DID / NEXT / NEED handoffs | End-of-run comment in the same shape (required by the skill) |
-| Reviewer ≠ implementer, max 3 rounds | Execution policy review stage (enforced) |
+| Reviewer ≠ implementer, max 3 rounds | Execution policy review stage (enforced when set at triage) |
 | Approvals bound to a Telegram thread | Paperclip approval objects; chat links to them |
 | Branch `<agent>/<task>`, commit `[agent] verb: desc` | Unchanged; the issue key goes in the branch name |
 | `FLEET-FEDERATION.md` PR claims | Issue checkout plus the PR linked as a work product |

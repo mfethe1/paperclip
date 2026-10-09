@@ -14,8 +14,10 @@ nothing exists only on Mack's disk without an owner.
 2. For each repo with unpushed or uncommitted work, open an issue: what the work is,
    which branch, whether it should be pushed, archived, or discarded. Pushing is the
    owner's call. Note that some branches must never go to a public remote.
-3. Import open items from `TASK_QUEUE.md` / `BACKLOG.md` files with
-   `scripts/migrate/import-task-queue.py`, after a `--dry-run` review.
+3. Import open items from `TASK_QUEUE.md` / `BACKLOG.md` files: build an overlay with
+   `scripts/migrate/build-overlay.py`, then load it with `scripts/import-company.py
+   exports/overlay --company-id <id> --include projects,issues --collision skip`,
+   after reviewing a `--dry-run` (docs/MIGRATION.md, 1b).
 4. For Hermes Kanban boards and Buzz tasks, list open cards by project and propose the
    mapping in a comment. Don't bulk-import until the authority decision
    (`decide-task-authority`) is approved.

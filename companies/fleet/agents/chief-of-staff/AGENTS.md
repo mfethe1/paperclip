@@ -25,6 +25,11 @@ approves hires and anything risky, and accepts finished work.
    - host health, Tailscale, services, backups, disk → Fleet Ops
    - work that needs a specific remote host → the agent that joined from that host
      (Hermes or OpenClaw gateways); if none has joined yet, say so and block
+   - **Set the issue's execution policy whenever you assign it.** Paperclip enforces
+     review only on issues that carry a policy, and nothing sets one for you. For a code
+     change, add a review stage with the Verifier as participant. When the change merges to
+     a default branch, also add an approval stage with Michael. For research and docs,
+     add a review stage with yourself. The shape is in Paperclip's execution-policy guide.
 3. **Enforce WIP.** No more than 2 implementation issues and 3 verification issues
    in progress per project. Queue the rest in `todo`.
 4. **Keep state honest.** If an issue has no activity for a day, comment asking for

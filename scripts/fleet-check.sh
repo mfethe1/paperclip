@@ -36,7 +36,6 @@ add() { # check host result detail
   [[ "$3" == "ok" || "$3" == "warn" ]] || failures=$((failures + 1))
 }
 
-http_code() { curl -s -o /dev/null -m 10 -w '%{http_code}' "$1" 2>/dev/null || echo 000; }
 
 # Control plane
 cp_host="$(jq -r '.control_plane.host' "$INV")"

@@ -45,7 +45,7 @@ case "$action" in
     fi
     [[ "$api_base_url" == https://* ]] \
       || die "Paperclip refuses plain-HTTP remote Hermes URLs; publish it first: scripts/node/expose-gateway.sh hermes"
-    code="$(curl -s -o /dev/null -w '%{http_code}' "$api_base_url/health" || echo 000)"
+    code="$(http_code "$api_base_url/health")"
     [[ "$code" == "200" ]] || die "$api_base_url/health returned HTTP $code; is the gateway published?"
 
     payload="$(jq -n --arg name "$name" --arg url "$api_base_url" --arg pc "$paperclip" \

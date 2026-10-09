@@ -83,7 +83,7 @@ Adding Paperclip without an authority decision would create exactly that.
 
 | State | Authority | Notes |
 |---|---|---|
-| Goals, projects, issues, assignment, review/approval decisions, budgets, routines that wake agents | **Paperclip** | One owner per issue via checkout; reviewer ≠ executor enforced by execution policy; approvals are first-class objects with an audit trail |
+| Goals, projects, issues, assignment, review/approval decisions, budgets, routines that wake agents | **Paperclip** | One owner per issue via checkout; reviewer ≠ executor enforced by the execution policy the Chief of Staff sets on each issue at triage; approvals are first-class objects with an audit trail |
 | Code | Git/GitHub | PRs are linked to issues as work products |
 | Conversation, notifications, presence, signed identity | Buzz, Telegram, Discord | Messages link to Paperclip issues and never carry task state |
 | Transport and remote execution | Tailscale, SSH, NATS, peer-relay | Plumbing only; never a source of truth |
