@@ -18,6 +18,8 @@ is specific to us:
 | `scripts/import-company.py` | Import a package with every agent and routine **paused** (the stock CLI starts them live) |
 | `scripts/export-company.sh` | Export the live board, normalize it, diff it against `companies/` |
 | `scripts/fleet-check.sh` | Probe the control plane, every host, and every gateway from any tailnet node |
+| `scripts/diagnose.sh` | Agent run failures grouped by cause, with the fix for each (read-only) |
+| `scripts/commitments.sh` | Overdue and at-risk projects, `Due:` issues, stalled and blocked work (read-only) |
 | `tools/` | Package validator (mirrors Paperclip's importer and YAML parser), export normalizer |
 | `docs/` | [Architecture](docs/ARCHITECTURE.md), [Runbook](docs/RUNBOOK.md), [Project management](docs/PROJECT-MANAGEMENT.md), [Migration](docs/MIGRATION.md), [Security](docs/SECURITY.md) |
 
@@ -28,6 +30,7 @@ is specific to us:
 | Company package imports cleanly into Paperclip 2026.1005.0 | **Verified** against a live instance; CI repeats it on every PR (`import-smoke` job) |
 | Paused import, overlay import, re-import idempotency, export round-trip | **Verified** against a live instance |
 | Hermes join flow (invite → request → approve → claim) | **Verified** against a live instance with a stub gateway |
+| Commitments: project leads and target dates on import, `commitments.sh`, weekday check routine | **Verified** against a live instance (report also run with an agent key); CI imports and runs it |
 | Control plane installed on the board host (Rosie) | **Not done.** Run `scripts/control-plane/preflight.sh`, then `install.sh --install-node`, on Rosie |
 | Remote agents joined (Rosie OpenClaw, Hermes gateways) | **Not done.** Host changes need approval, see `docs/RUNBOOK.md` |
 | Which system is the authority for task state (Paperclip vs Buzz/Kanban) | **Open decision.** See [Architecture § Authority](docs/ARCHITECTURE.md#authority-where-each-kind-of-state-lives) |

@@ -115,6 +115,8 @@ paperclipai company list --api-base "$PAPERCLIP_API_URL"    # note the company i
 3. **Test environment.** Click the button on each agent's settings page.
 4. **Smoke issue.** `paperclipai agent resume <agent-id>`, then create an issue assigned
    to it ("comment `SMOKE_OK_<timestamp>` and mark done"). Confirm the comment and status.
+   Always resume before assigning. A `todo` or `in_progress` issue assigned to a paused
+   agent turns `blocked` within minutes (recovery `stranded_assigned_issue`).
    If it fails, run `scripts/diagnose.sh` (§7). It names the cause and the fix.
 5. **Routines** stay paused until Michael approves recurring activation. Then resume the
    routine's assignee agent first, and:
@@ -183,6 +185,10 @@ Then run a smoke issue as in §4.
   on someone. Add `--server-log <file>` to check for server crashes, and `--out
   report.md` to attach the report to an issue.
   [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md) has the full table.
+- **Commitments:** `scripts/commitments.sh` lists overdue and at-risk projects, `Due:`
+  issues, and stalled and blocked work. It is read-only. Add `--strict` to exit 1 when
+  anything is overdue or at risk. The weekday routine runs it for you; see
+  [Project management § Commitments](PROJECT-MANAGEMENT.md#commitments-and-deadlines).
 - **Fleet check:** `scripts/fleet-check.sh`, run from the board host and from one other
   node. Needs `fleet/hosts.json`: copy `fleet/hosts.example.json` and fill it in.
 - **Logs:** `paperclipai service logs -n 500` (`-f` to follow); per-run logs are on each issue.

@@ -92,7 +92,8 @@ def title_for(text: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--projects", type=Path, help="JSON list of {slug,name,description,repoUrl,status}")
+    ap.add_argument("--projects", type=Path, help="JSON list of {slug,name,description,repoUrl,status,targetDate,lead}; "
+                         "lead is the slug of an agent already on the board")
     ap.add_argument("--checklist", action="append", default=[], metavar="FILE=PROJECT_SLUG",
                     help="markdown checklist and the project slug its items belong to (repeatable)")
     ap.add_argument("--since", type=date.fromisoformat,
@@ -125,6 +126,10 @@ def main() -> int:
             f"description: {yaml_str(desc)}\n---\n\n{desc or 'Imported from the fleet project roster.'}\n",
             encoding="utf-8")
         ext: dict = {"status": row.get("status") or "in_progress"}
+        if row.get("targetDate"):
+            ext["targetDate"] = str(row["targetDate"])
+        if row.get("lead"):
+            ext["leadAgentSlug"] = row["lead"]
         if row.get("repoUrl"):
             ext["workspaces"] = {slug: {
                 "name": slug, "sourceType": "git_repo", "repoUrl": row["repoUrl"],

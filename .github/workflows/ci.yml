@@ -48,8 +48,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install pyyaml
-      - name: diagnose.sh under /bin/bash against captured board responses
-        run: TEST_BASH=/bin/bash python -m unittest tests.test_tools.DiagnoseTest -v
+      - name: diagnose.sh and commitments.sh under /bin/bash against captured board responses
+        run: TEST_BASH=/bin/bash python -m unittest tests.test_tools.DiagnoseTest tests.test_tools.CommitmentsTest -v
 
   gitleaks:
     runs-on: ubuntu-latest
@@ -104,8 +104,8 @@ jobs:
           agents="$(curl -fsS $api/companies/$cid/agents)"
           echo "$agents" | jq -e 'length == 4 and all(.status == "paused")'
           echo "$agents" | jq -e '[.[] | select(.reportsTo == null)] | length == 1'
-          curl -fsS $api/companies/$cid/routines | jq -e 'length == 2 and all(.status == "paused")'
-          curl -fsS $api/companies/$cid/projects | jq -e 'length == 3'
+          curl -fsS $api/companies/$cid/routines | jq -e 'length == 3 and all(.status == "paused")'
+          curl -fsS $api/companies/$cid/projects | jq -e 'length == 3 and all(.leadAgentId != null)'
           curl -fsS "$api/companies/$cid/issues" | jq -e 'length == 3'
           echo "cid=$cid" >> "$GITHUB_ENV"
       - name: Re-import is refused, then idempotent
@@ -115,9 +115,14 @@ jobs:
           test "$rc" -eq 2
           python scripts/import-company.py companies/fleet --company-id "$cid" --collision skip
           curl -fsS $api/companies | jq -e 'length == 1'
-          curl -fsS $api/companies/$cid/routines | jq -e 'length == 2'
+          curl -fsS $api/companies/$cid/routines | jq -e 'length == 3'
           curl -fsS "$api/companies/$cid/issues" | jq -e 'length == 3'
           curl -fsS $api/companies/$cid/agents | jq -e 'length == 4'
+      - name: Commitments report against the imported board
+        run: |
+          scripts/commitments.sh --board-url http://127.0.0.1:3100 --company-id "$cid" --strict | tee report.md
+          grep -q '^\*\*ON TRACK\*\*' report.md
+          grep -q 'Active projects with no lead: none' report.md
       - name: Server log on failure
         if: failure()
         run: tail -200 "$RUNNER_TEMP/server.log" || true

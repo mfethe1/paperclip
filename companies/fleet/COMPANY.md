@@ -11,6 +11,7 @@ goals:
   - Every piece of agent work is a Paperclip issue with one owner, one project, and evidence-backed completion.
   - Durable work runs on always-on hosts (the board host Rosie, and Mack) and never depends on the operator laptop being awake.
   - Agents on every tailnet host (Hermes, OpenClaw, Claude Code, Codex) take work from the same board.
+  - Every commitment has a target date and a lead, and work that is slipping is flagged before the date, not after.
 ---
 
 # Fleet

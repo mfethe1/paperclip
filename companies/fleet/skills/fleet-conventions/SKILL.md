@@ -102,3 +102,15 @@ An approval covers exactly what it names. Silence is never approval.
 | Lenny | Linux spare | Read-only probes only unless an issue says otherwise. |
 
 A heartbeat or cached status file is not proof a host is alive. Probe it.
+
+## 9. Dates and commitments
+
+- A commitment is a project with a target date and a lead. Paperclip has no due date
+  on issues, so an issue with its own deadline starts its description with a line
+  `Due: YYYY-MM-DD`. `scripts/commitments.sh` reads both.
+- Only Michael sets or moves a date. If you are asked to commit to one, propose it in
+  the issue and let him set it.
+- Say a date is at risk the day you know it. Comment `AT RISK: <why>. Needs: <what>.
+  Earliest realistic date: <date>.` on the issue and mention the project lead. Never
+  let a date pass silently.
+- Missing a date isn't the failure. Missing it with no warning is.

@@ -11,7 +11,7 @@
 #
 # Usage: scripts/diagnose.sh [--board-url URL] [--company-id ID] [--limit 200]
 #                            [--detail-max 20] [--server-log FILE] [--out FILE] [--strict]
-# Env:   PAPERCLIP_API_URL, PAPERCLIP_API_KEY (a board key; agent keys can't read runs),
+# Env:   PAPERCLIP_API_URL, PAPERCLIP_API_KEY (a board key, or an agent key in agent runs),
 #        PAPERCLIP_COMPANY_ID
 # Exit:  0, or 1 with --strict when any FAIL/CRITICAL is reported.
 set -euo pipefail
@@ -54,7 +54,7 @@ api_get() { # path outfile -> returns 0 on HTTP 200
   code="${code:-000}"
   printf '%s GET %s\n' "$code" "${path%%\?*}" >> "$CALLS"
   if [[ "$code" == "403" && "$path" == *heartbeat-runs* ]]; then
-    warn "403 on $path: a board key is required (agent keys lack company_scope:read)"
+    warn "403 on $path: this key may not read run telemetry (low-trust agent or another company); use a board key"
   fi
   [[ "$code" == "200" ]]
 }

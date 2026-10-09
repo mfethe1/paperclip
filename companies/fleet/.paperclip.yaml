@@ -55,6 +55,7 @@ agents:
 projects:
   control-plane:
     status: in_progress
+    leadAgentSlug: fleet-ops
     workspaces:
       paperclip:
         name: paperclip
@@ -64,8 +65,10 @@ projects:
         isPrimary: true
   fleet-operations:
     status: in_progress
+    leadAgentSlug: fleet-ops
   intake:
     status: in_progress
+    leadAgentSlug: chief-of-staff
 
 tasks:
   import-mack-work:
@@ -78,6 +81,14 @@ tasks:
 # Imported routines land paused; activate them from the board once the agents
 # they target are verified working. Schedules use off-the-hour minutes.
 routines:
+  commitments-check:
+    concurrencyPolicy: skip_if_active
+    catchUpPolicy: skip_missed
+    triggers:
+      - kind: schedule
+        label: Weekdays 08:41 ET
+        cronExpression: "41 8 * * 1-5"
+        timezone: America/New_York
   daily-fleet-check:
     concurrencyPolicy: skip_if_active
     catchUpPolicy: skip_missed

@@ -75,6 +75,7 @@ check "install.sh --dry-run" "$BASH_BIN" scripts/control-plane/install.sh --dry-
 check "preflight.sh" "$BASH_BIN" scripts/control-plane/preflight.sh
 check "fleet-check.sh" "$BASH_BIN" scripts/fleet-check.sh --inventory "$T/hosts.json"
 check "diagnose.sh (unreachable board)" "$BASH_BIN" scripts/diagnose.sh --board-url http://127.0.0.1:9
+check "commitments.sh (unreachable board)" "$BASH_BIN" scripts/commitments.sh --board-url http://127.0.0.1:9 --company-id x
 check "inventory-local-work.sh" env MAXDEPTH=2 "$BASH_BIN" scripts/migrate/inventory-local-work.sh "$T/home"
 check "expose-gateway.sh (no gateway)" "$BASH_BIN" scripts/node/expose-gateway.sh hermes --dry-run
 check "join-hermes.sh (usage)" "$BASH_BIN" scripts/node/join-hermes.sh request --paperclip http://127.0.0.1:9

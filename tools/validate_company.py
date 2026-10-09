@@ -55,6 +55,9 @@ ADAPTER_TYPES = {
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
+# packages/shared/src/constants.ts PROJECT_STATUSES (the importer turns anything else into backlog)
+PROJECT_STATUSES = {"backlog", "planned", "in_progress", "completed", "cancelled"}
+
 # Values that must never be committed. Patterns are deliberately broad.
 SECRET_PATTERNS = [
     (re.compile(r"sk-ant-[A-Za-z0-9_-]{10,}"), "Anthropic key"),
@@ -98,7 +101,7 @@ def check_paperclip_reads_same(report: "Report", path: Path, raw: str) -> None:
         return
     try:
         expected = _normalize(yaml.safe_load(raw) or {})
-    except YAMLError as exc:
+    except (YAMLError, ValueError) as exc:  # PyYAML raises ValueError for dates like 2026-13-01
         report.error(path, f"invalid YAML: {exc}")
         return
     actual = _normalize(pcyaml.parse(raw))
@@ -257,6 +260,7 @@ def validate_package(root: Path) -> Report:
                 report.warn(root / "agents" / slug, f"skill '{skill}' is not packaged here; it must exist in the company skill library")
 
     projects: set[str] = set()
+    project_owner: dict[str, str] = {}
     for path in sorted(root.glob("projects/*/PROJECT.md")):
         try:
             fm, _ = parse_frontmatter(path)
@@ -268,6 +272,8 @@ def validate_package(root: Path) -> Report:
         if not fm.get("name"):
             report.error(path, "missing 'name'")
         owner = fm.get("owner")
+        if owner:
+            project_owner[slug] = owner
         if owner and owner not in agents:
             report.error(path, f"owner '{owner}' is not an agent in this package")
 
@@ -297,7 +303,7 @@ def validate_package(root: Path) -> Report:
     if ext_path.is_file():
         try:
             ext = _load(ext_path.read_text(encoding="utf-8")) or {}
-        except YAMLError as exc:
+        except (YAMLError, ValueError) as exc:
             report.error(ext_path, f"invalid YAML: {exc}")
             ext = {}
         if ext.get("schema") != "paperclip/v1":
@@ -318,9 +324,34 @@ def validate_package(root: Path) -> Report:
         for slug in agents:
             if slug not in (ext.get("agents") or {}):
                 report.error(ext_path, f"agent '{slug}' has no adapter config in .paperclip.yaml")
-        for slug in (ext.get("projects") or {}):
+        ext_projects = ext.get("projects") or {}
+        for slug, cfg in ext_projects.items():
+            cfg = cfg or {}
             if slug not in projects:
                 report.error(ext_path, f"projects.{slug} has no matching PROJECT.md")
+            lead = cfg.get("leadAgentSlug")
+            # An overlay's lead is an agent already on the board; it can't be checked here.
+            if lead and not overlay and lead not in agents:
+                report.error(ext_path, f"projects.{slug}.leadAgentSlug '{lead}' is not an agent in this package")
+            status = cfg.get("status")
+            if status is not None and status not in PROJECT_STATUSES:
+                report.error(ext_path, f"projects.{slug}.status '{status}' is not one of {sorted(PROJECT_STATUSES)}")
+            target = cfg.get("targetDate")
+            if target is not None:
+                text = str(_normalize(target))
+                try:
+                    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+                        raise ValueError(text)
+                    date.fromisoformat(text)
+                except ValueError:
+                    report.error(ext_path, f"projects.{slug}.targetDate '{target}' is not a YYYY-MM-DD date")
+        # PROJECT.md 'owner' is parsed but never applied (2026.1005.0); the lead comes
+        # only from leadAgentSlug.
+        for slug, owner in project_owner.items():
+            lead = (ext_projects.get(slug) or {}).get("leadAgentSlug")
+            if lead != owner:
+                report.error(ext_path, f"projects.{slug}.leadAgentSlug must be '{owner}' (PROJECT.md owner); "
+                             "Paperclip ignores 'owner' when importing, so the project would have no lead")
         for slug, routine in (ext.get("routines") or {}).items():
             if slug not in tasks:
                 report.error(ext_path, f"routines.{slug} has no matching TASK.md")

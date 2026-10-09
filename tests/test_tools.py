@@ -113,6 +113,16 @@ class ValidatorTest(unittest.TestCase):
         self.assertIn("reportsTo 'ghost'", joined)
         self.assertIn("assignee 'nobody'", joined)
 
+    def test_project_owner_needs_lead_and_dates_must_parse(self):
+        ext = self.pkg / ".paperclip.yaml"
+        text = ext.read_text().replace("    leadAgentSlug: chief-of-staff\n", "", 1)
+        text = text.replace("    leadAgentSlug: fleet-ops\n", "    leadAgentSlug: fleet-ops\n    targetDate: \"2026-13-01\"\n", 1)
+        ext.write_text(text.replace("status: in_progress", "status: active", 1))
+        joined = "\n".join(self.errors())
+        self.assertIn("projects.intake.leadAgentSlug must be 'chief-of-staff'", joined)
+        self.assertIn("targetDate '2026-13-01' is not a YYYY-MM-DD date", joined)
+        self.assertIn("status 'active' is not one of", joined)
+
     def test_routine_must_target_recurring_task(self):
         task = self.pkg / "tasks" / "daily-fleet-check" / "TASK.md"
         task.write_text(task.read_text().replace("recurring: true\n", ""))
@@ -150,7 +160,8 @@ class OverlayTest(unittest.TestCase):
                 - [ ] Old item | extracted:2026-01-02 10:00
             """)
             projects = d / "projects.json"
-            projects.write_text('[{"name": "Construct Pro", "repoUrl": "https://github.com/o/construct-pro"}]')
+            projects.write_text('[{"name": "Construct Pro", "repoUrl": "https://github.com/o/construct-pro",'
+                                ' "targetDate": "2026-11-30", "lead": "builder"}]')
             out = d / "overlay"
             argv = ["build-overlay.py", "--projects", str(projects), "--checklist", f"{q}=intake",
                     "--since", "2026-08-01", "--out", str(out)]
@@ -166,6 +177,8 @@ class OverlayTest(unittest.TestCase):
             ext = pcyaml.parse((out / ".paperclip.yaml").read_text())
             self.assertEqual(ext["projects"]["construct-pro"]["workspaces"]["construct-pro"]["repoUrl"],
                              "https://github.com/o/construct-pro")
+            self.assertEqual(ext["projects"]["construct-pro"]["targetDate"], "2026-11-30")
+            self.assertEqual(ext["projects"]["construct-pro"]["leadAgentSlug"], "builder")
             self.assertEqual(validate_company.validate_package(out).errors, [])
 
 
@@ -279,6 +292,48 @@ class PackageReposTest(unittest.TestCase):
                          ["https://github.com/mfethe1/paperclip"])
 
 
+def serve_fixtures(case, fix, routes):
+    """Serve captured board responses on loopback; records every request method."""
+    import http.server
+    import re as _re
+    import threading
+    methods = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def _any(self):
+            methods.append(self.command)
+            path, _, query = self.path.partition("?")
+            # A paged list: everything is on the first page.
+            if "offset=" in query and "offset=0" not in query:
+                return self._send(b"[]")
+            for pattern, name in routes:
+                m = _re.match(pattern, path)
+                if m and self.command == "GET":
+                    f = fix / name.format(*m.groups())
+                    if f.is_file():
+                        return self._send(f.read_bytes())
+            self.send_response(404)
+            self.send_header("content-length", "0")
+            self.end_headers()
+
+        def _send(self, body):
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        do_GET = do_POST = do_PATCH = do_PUT = do_DELETE = _any
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    case.addCleanup(srv.server_close)
+    case.addCleanup(srv.shutdown)
+    return f"http://127.0.0.1:{srv.server_address[1]}", methods
+
+
 class DiagnoseTest(unittest.TestCase):
     """scripts/diagnose.sh against responses captured from a real 2026.1005.0 board
     (a Claude agent with no login and a Codex agent with no credentials)."""
@@ -286,11 +341,7 @@ class DiagnoseTest(unittest.TestCase):
     FIX = ROOT / "tests" / "fixtures" / "diagnose"
 
     def serve(self):
-        import http.server
-        import re as _re
-        import threading
-        fix, methods = self.FIX, []
-        routes = [
+        return serve_fixtures(self, self.FIX, [
             (r"^/api/health$", "health.json"),
             (r"^/api/companies$", "companies.json"),
             (r"^/api/companies/[^/]+/agents$", "agents.json"),
@@ -299,34 +350,7 @@ class DiagnoseTest(unittest.TestCase):
             (r"^/api/companies/[^/]+/adapters/codex_local/auth-signal$", "codex-auth.json"),
             (r"^/api/heartbeat-runs/([^/]+)$", "runs/{0}.json"),
             (r"^/api/issues/([^/]+)/recovery-actions$", "recovery/{0}.json"),
-        ]
-
-        class Handler(http.server.BaseHTTPRequestHandler):
-            def _any(self):
-                methods.append(self.command)
-                path = self.path.split("?")[0]
-                for pattern, name in routes:
-                    m = _re.match(pattern, path)
-                    if m and self.command == "GET":
-                        f = fix / name.format(*m.groups())
-                        if f.is_file():
-                            body = f.read_bytes()
-                            self.send_response(200)
-                            self.send_header("content-type", "application/json")
-                            self.end_headers()
-                            self.wfile.write(body)
-                            return
-                self.send_response(404)
-                self.end_headers()
-            do_GET = do_POST = do_PATCH = do_PUT = do_DELETE = _any
-
-            def log_message(self, *a):
-                pass
-
-        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
-        self.addCleanup(srv.shutdown)
-        return f"http://127.0.0.1:{srv.server_address[1]}", methods
+        ])
 
     def test_report_groups_failures_and_stays_read_only(self):
         if not shutil.which("jq"):
@@ -350,6 +374,56 @@ class DiagnoseTest(unittest.TestCase):
         self.assertNotIn("/Users/", out)
         self.assertNotIn("/home/", out)
         self.assertNotRegex(out, r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
+class CommitmentsTest(unittest.TestCase):
+    """scripts/commitments.sh against responses captured from a real 2026.1005.0 board:
+    projects with target dates, issues in every state, Due: lines, paused agents."""
+
+    FIX = ROOT / "tests" / "fixtures" / "commitments"
+
+    def run_report(self, *args):
+        if not shutil.which("jq"):
+            self.skipTest("jq not installed")
+        url, methods = serve_fixtures(self, self.FIX, [
+            (r"^/api/companies/[^/]+$", "company.json"),
+            (r"^/api/companies/[^/]+/projects$", "projects.json"),
+            (r"^/api/companies/[^/]+/agents$", "agents.json"),
+            (r"^/api/companies/[^/]+/issues$", "issues.json"),
+        ])
+        cid = (self.FIX / "COMPANY_ID").read_text().strip()
+        bash = os.environ.get("TEST_BASH", "bash")
+        r = subprocess.run([bash, str(ROOT / "scripts" / "commitments.sh"), "--board-url", url,
+                            "--company-id", cid, *args], capture_output=True, text=True, timeout=60)
+        self.assertEqual(set(methods), {"GET"})
+        return r
+
+    def test_flags_overdue_at_risk_and_stalled_work(self):
+        r = self.run_report("--today", "2026-10-16", "--strict")
+        out = r.stdout
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("**ATTENTION**: 1 overdue project, 1 overdue issue, "
+                      "4 projects due within 14 days (4 at risk)", out)
+        self.assertIn("| Website Relaunch | Builder (paused) | 2026-10-12 | 4 days |", out)
+        self.assertIn("| Grant Application | none | 2026-10-28 | 12 days | 0 | 0 | 0 | 0 |", out)
+        self.assertIn("no lead; no issues planned", out)
+        self.assertIn("owned by a paused or failing agent", out)
+        # Due: lines, plain and bold; past the horizon and invalid dates are left out.
+        self.assertRegex(out, r"FLE-15 Renew company domain \| Intake \| unassigned \| todo \| 2026-10-14 \| late by 2 days")
+        self.assertIn("FLE-16 Send board deck | Intake | Chief of Staff (paused) | blocked | 2026-10-24 | in 8 days | blocked |", out)
+        self.assertNotIn("Plan offsite", out)
+        self.assertNotIn("Bad date", out)
+        self.assertNotIn("Hiring Pipeline", out)
+        # Blocked: the stated unblock, or Paperclip's recovery reason in plain words.
+        self.assertIn("board: Approve the key rotation window", out)
+        self.assertIn("assignee cannot run (paused or failing)", out)
+        self.assertIn("Migrate blog posts \\| redirects", out)
+        self.assertIn("| FLE-11 Verify migrated invoices | Verifier (paused) | in_review | 6 days |", out)
+
+    def test_on_track_when_nothing_is_due(self):
+        r = self.run_report("--today", "2026-09-01", "--strict")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("**ON TRACK**: 0 overdue projects, 0 overdue issues, 0 projects due within 14 days", r.stdout)
 
 
 class CliTest(unittest.TestCase):

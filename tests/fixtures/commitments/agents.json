@@ -1,0 +1,42 @@
+[
+  {
+    "id": "072459dc-5ec6-4898-b311-3755b2fbd2ed",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Builder",
+    "role": "engineer",
+    "urlKey": "builder",
+    "status": "paused",
+    "pauseReason": "import",
+    "adapterType": "claude_local"
+  },
+  {
+    "id": "25c1ad4d-4e3c-4096-8663-2a87f3792a8a",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Fleet Ops",
+    "role": "devops",
+    "urlKey": "fleet-ops",
+    "status": "paused",
+    "pauseReason": "import",
+    "adapterType": "claude_local"
+  },
+  {
+    "id": "d85cc9c5-6c9e-4c97-8bef-465c8037c0df",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Verifier",
+    "role": "qa",
+    "urlKey": "verifier",
+    "status": "paused",
+    "pauseReason": "import",
+    "adapterType": "codex_local"
+  },
+  {
+    "id": "f4cefde0-8f1c-42ef-8b6a-f38d3f05ff77",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Chief of Staff",
+    "role": "ceo",
+    "urlKey": "chief-of-staff",
+    "status": "paused",
+    "pauseReason": "import",
+    "adapterType": "claude_local"
+  }
+]

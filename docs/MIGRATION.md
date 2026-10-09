@@ -16,7 +16,8 @@ private repos and contains chat references.
 **1a. Projects from repos** (on any machine with `gh` logged in):
 ```sh
 scripts/migrate/discover-projects.sh --days 60     # writes fleet/projects.json
-# edit fleet/projects.json: drop non-projects, merge related repos, fix names
+# edit fleet/projects.json: drop non-projects, merge related repos, fix names;
+# add "targetDate": "YYYY-MM-DD" and "lead": "<agent-slug>" to projects with a real date
 ```
 
 **1b. Backlog from queue files** (on the host that has them, usually Mack):

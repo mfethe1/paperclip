@@ -6,7 +6,7 @@ causes below and prints each group's fix, so you rarely need this page directly.
 
 ```sh
 export PAPERCLIP_API_URL=https://<board-host>.<tailnet>.ts.net:3100
-export PAPERCLIP_API_KEY=<board key>          # agent keys can't read runs
+export PAPERCLIP_API_KEY=<board key>          # inside agent runs the agent key is already set
 scripts/diagnose.sh                           # add --server-log <file>, --out report.md, --strict
 ```
 
@@ -50,6 +50,7 @@ Check with `paperclipai issue runs <issue>`.
 | `install.sh`: `no GUI login session` | The LaunchAgent needs the user logged in to the Mac's desktop | Log in at the console or via Screen Sharing, then re-run |
 | Agent shows status `error` and takes no work | A failed run marks the agent error until it is cleared | Fix the cause from the table above, then `paperclipai agent resume <agent>` |
 | HTTP 409 `Agent is not invokable in its current state` (also in routine run failures) | Agent paused (imports pause everything by design) or errored | With approval: `paperclipai agent resume <agent>` |
+| Issues assigned to an agent turn `blocked` within minutes, with recovery `stranded_assigned_issue` ("the original assignee is not invokable") | Paperclip's recovery sweep blocks `todo`/`in_progress` issues whose assignee is paused or failing, and hands them to the board. `backlog` issues are left alone | Resume the agent before assigning it work. For issues already blocked: resume, then `paperclipai issue recovery:resolve <issue> --outcome restored --source-issue-status todo` |
 | HTTP 409 `Routine trigger is not active` | Routine paused (imported paused) | Resume its assignee agent first, then `paperclipai routine update <id> --payload-json '{"status":"active"}'` |
 | Import: 422 `Required environment values are missing: agent:<slug>:<KEY>` | A required env input had no value | `scripts/import-company.py` now refuses this before anything is created; pass `--secret-env agent:<slug>:<KEY>=<ENVVAR>` |
 | A second company "Fleet (2)", or duplicate routines | A re-import without `--company-id` | Delete the duplicate; re-run with `--company-id <id> --collision skip` (the script now refuses the plain re-run) |

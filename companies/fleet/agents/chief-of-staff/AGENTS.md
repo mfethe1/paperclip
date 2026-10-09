@@ -37,8 +37,15 @@ approves hires and anything risky, and accepts finished work.
 4. **Keep state honest.** If an issue has no activity for a day, comment asking for
    status, then reassign or block it. Never mark work done on the strength of a
    worker's report alone.
-5. **Weekly review.** Summarize each project: shipped (with evidence links), in
-   flight, blocked, and the decisions Michael needs to make.
+5. **Guard commitments.** A commitment is a project with a target date and a lead (or
+   an issue with a `Due:` line). On weekdays, run `scripts/commitments.sh` and act on what
+   it lists (the commitments-check routine has the steps). Surface slips before the
+   date, each with a recommendation: a new date, or the scope to cut. Only Michael moves
+   a date. When you triage work that has a deadline, ask him for the date instead of
+   leaving it implied.
+6. **Weekly review.** Lead with commitments due in the next three weeks, then
+   summarize each project: shipped (with evidence links), in flight, blocked, and the
+   decisions Michael needs to make.
 
 ## Limits
 

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "1c1d3177-27a8-4bf5-a98f-1b65b3c4c504",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Control Plane",
+    "status": "in_progress",
+    "leadAgentId": null,
+    "targetDate": null,
+    "updatedAt": "2026-10-09T17:25:40.848Z",
+    "archivedAt": null
+  },
+  {
+    "id": "a8389582-aff4-4e0d-877f-33c9107fb078",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Fleet Operations",
+    "status": "in_progress",
+    "leadAgentId": null,
+    "targetDate": null,
+    "updatedAt": "2026-10-09T17:25:40.867Z",
+    "archivedAt": null
+  },
+  {
+    "id": "a9e15b65-bf18-4a36-af86-8ad44dfecb63",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Intake",
+    "status": "in_progress",
+    "leadAgentId": null,
+    "targetDate": null,
+    "updatedAt": "2026-10-09T17:25:40.877Z",
+    "archivedAt": null
+  },
+  {
+    "id": "12b72ae1-22af-4dd9-84f5-f8b63cdfe44b",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Website Relaunch",
+    "status": "in_progress",
+    "leadAgentId": "072459dc-5ec6-4898-b311-3755b2fbd2ed",
+    "targetDate": "2026-10-12",
+    "updatedAt": "2026-10-09T17:28:33.995Z",
+    "archivedAt": null
+  },
+  {
+    "id": "f831f54b-9151-4560-8c1c-9768d87875b3",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Q4 Client Report",
+    "status": "in_progress",
+    "leadAgentId": "f4cefde0-8f1c-42ef-8b6a-f38d3f05ff77",
+    "targetDate": "2026-10-20",
+    "updatedAt": "2026-10-09T17:28:34.020Z",
+    "archivedAt": null
+  },
+  {
+    "id": "b96a9f91-a7be-4640-80c8-c01d9feba298",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Billing Migration",
+    "status": "in_progress",
+    "leadAgentId": "25c1ad4d-4e3c-4096-8663-2a87f3792a8a",
+    "targetDate": "2026-10-25",
+    "updatedAt": "2026-10-09T17:28:34.042Z",
+    "archivedAt": null
+  },
+  {
+    "id": "d8703890-ec58-4948-b28f-3897be5e2018",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Hiring Pipeline",
+    "status": "in_progress",
+    "leadAgentId": "f4cefde0-8f1c-42ef-8b6a-f38d3f05ff77",
+    "targetDate": "2026-12-01",
+    "updatedAt": "2026-10-09T17:28:34.064Z",
+    "archivedAt": null
+  },
+  {
+    "id": "01547c53-c516-4b9e-96eb-c134a0535ef0",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Grant Application",
+    "status": "in_progress",
+    "leadAgentId": null,
+    "targetDate": "2026-10-28",
+    "updatedAt": "2026-10-09T17:28:34.088Z",
+    "archivedAt": null
+  },
+  {
+    "id": "0271ebef-087f-439a-9ef0-f75e9b4d6b97",
+    "companyId": "5f4c71d6-bb61-488b-945b-db1a7cc398cc",
+    "name": "Docs Refresh",
+    "status": "in_progress",
+    "leadAgentId": "d85cc9c5-6c9e-4c97-8bef-465c8037c0df",
+    "targetDate": "2026-10-22",
+    "updatedAt": "2026-10-09T17:28:34.110Z",
+    "archivedAt": null
+  }
+]
