@@ -246,7 +246,7 @@ redact() {
     -e 's#/(Users|home)/[^/ "]+#<home>#g' \
     -e 's#[A-Za-z0-9-]+\.tail[0-9a-f]+\.ts\.net#<host>#g' \
     -e 's#127\.0\.0\.1#LOOPBACK_KEEP#g' \
-    -e 's#\b([0-9]{1,3}\.){3}[0-9]{1,3}\b#<ip>#g' \
+    -e 's#(^|[^0-9.])([0-9]{1,3}\.){3}[0-9]{1,3}#\1<ip>#g' \
     -e 's#LOOPBACK_KEEP#127.0.0.1#g' \
     -e 's#[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}#<uuid>#g' \
     -e 's#(Bearer|bearer) [A-Za-z0-9._~+/=-]+#\1 <redacted>#g' \

@@ -81,5 +81,13 @@ check "join-hermes.sh (usage)" "$BASH_BIN" scripts/node/join-hermes.sh request -
 check "export-company.sh (usage)" "$BASH_BIN" scripts/export-company.sh
 check "discover-projects.sh --help" "$BASH_BIN" scripts/migrate/discover-projects.sh --help
 check "lock-signup.sh (no instance)" "$BASH_BIN" scripts/control-plane/lock-signup.sh
+# Redaction must work with the platform's sed (BSD on macOS: no \b, etc.).
+sed -n '/^redact() {/,/^}/p' "$ROOT/scripts/diagnose.sh" > "$T/redact.sh"
+red="$(printf '%s\n' 'ip 100.66.54.22 /Users/alice/x box.tail1a2b3c.ts.net 127.0.0.1 v2026.1005.0 Bearer abc.def 0123abcd-0000-4000-8000-0123456789ab' \
+  | "$BASH_BIN" -c ". '$T/redact.sh'; redact")"
+case "$red" in
+  *"<ip>"*"<home>/x"*"<host>"*"127.0.0.1"*"v2026.1005.0"*"Bearer <redacted>"*"<uuid>"*) echo "ok   redact() with this platform's sed" ;;
+  *) echo "FAIL redact() output: $red"; fail=1 ;;
+esac
 rm -rf "$ROOT/migration/out"
 exit "$fail"
