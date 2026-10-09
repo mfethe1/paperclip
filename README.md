@@ -12,7 +12,7 @@ is specific to us:
 | Path | What it is |
 |---|---|
 | `companies/fleet/` | The company as code: org chart, agents, projects, routines, and the `fleet-conventions` skill (Agent Companies format, importable) |
-| `scripts/control-plane/` | Install and reconcile Paperclip on Mack: authenticated, loopback-only, published on the tailnet via Tailscale Serve |
+| `scripts/control-plane/` | Preflight, then install and reconcile Paperclip on the board host: authenticated, loopback-only, published on the tailnet via Tailscale Serve |
 | `scripts/node/` | Per-host: publish a Hermes/OpenClaw gateway to the tailnet, join it to the board |
 | `scripts/migrate/` | Bring existing work in: repo roster → projects, `TASK_QUEUE.md`/`BACKLOG.md` → issues, unpushed-work inventory |
 | `scripts/import-company.py` | Import a package with every agent and routine **paused** (the stock CLI starts them live) |
@@ -28,7 +28,7 @@ is specific to us:
 | Company package imports cleanly into Paperclip 2026.1005.0 | **Verified** against a live instance; CI repeats it on every PR (`import-smoke` job) |
 | Paused import, overlay import, re-import idempotency, export round-trip | **Verified** against a live instance |
 | Hermes join flow (invite → request → approve → claim) | **Verified** against a live instance with a stub gateway |
-| Control plane installed on Mack | **Not done.** Needs a person on Mack: `scripts/control-plane/install.sh` |
+| Control plane installed on the board host (Rosie) | **Not done.** Run `scripts/control-plane/preflight.sh`, then `install.sh --install-node`, on Rosie |
 | Remote agents joined (Rosie OpenClaw, Hermes gateways) | **Not done.** Host changes need approval, see `docs/RUNBOOK.md` |
 | Which system is the authority for task state (Paperclip vs Buzz/Kanban) | **Open decision.** See [Architecture § Authority](docs/ARCHITECTURE.md#authority-where-each-kind-of-state-lives) |
 

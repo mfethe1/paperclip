@@ -5,7 +5,9 @@ set -euo pipefail
 # shellcheck source=lib/common.sh
 source "$(dirname "$0")/lib/common.sh"
 
-hook="$(git -C "$REPO_ROOT" rev-parse --git-path hooks)/pre-commit"
+hookdir="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-path hooks)"
+mkdir -p "$hookdir"
+hook="$hookdir/pre-commit"
 cat > "$hook" <<'HOOK'
 #!/usr/bin/env bash
 set -euo pipefail

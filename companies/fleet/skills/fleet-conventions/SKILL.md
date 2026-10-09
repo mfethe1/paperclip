@@ -95,8 +95,8 @@ An approval covers exactly what it names. Silence is never approval.
 
 | Alias | Role | Notes |
 |---|---|---|
-| Mack | Control plane and durable execution | Always on. After a cold boot it waits for a manual FileVault unlock. |
-| Rosie | OpenClaw integrations, home automation | Owns the OpenClaw gateway. |
+| Rosie | Board host (Paperclip control plane) and OpenClaw | Runs this board plus the Chief of Staff, Builder, Verifier and Fleet Ops agents. Owns the OpenClaw gateway. |
+| Mack | Main Hermes worker; heavy builds | Busiest machine: Hermes, ~100 crons, 10–20 GB/day of build churn. After a cold boot it waits for a manual FileVault unlock. |
 | Winnie | GPU inference (Ollama), Windows tasks, bulk storage | SSH lands in PowerShell 5.1 (`&&` fails; scp/rsync unreliable). Small C: drive. |
 | Airy | Operator laptop | Not durable. Never schedule work that depends on it being awake. |
 | Lenny | Linux spare | Read-only probes only unless an issue says otherwise. |

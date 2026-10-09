@@ -32,6 +32,18 @@ find_repos() {
   | sed 's#/\.git$##' | sort -u
 }
 
+# macOS privacy controls (TCC) silently hide these folders from Terminal unless it has
+# Full Disk Access; list what couldn't be read instead of reporting "nothing found".
+not_scanned=()
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  for d in "$HOME/Documents" "$HOME/Desktop" "$HOME/Downloads"; do
+    if [[ -d "$d" ]] && ! ls "$d" >/dev/null 2>&1; then
+      warn "cannot read $d (grant Terminal Full Disk Access to include it)"
+      not_scanned+=("$d")
+    fi
+  done
+fi
+
 {
   echo "# Local work inventory: ${HOST_ALIAS}"
   echo
@@ -74,6 +86,11 @@ done < <(find_repos "$@")
 {
   echo
   echo "Scanned $total repos/worktrees; $flagged have work that is not safely on a remote."
+  if [[ ${#not_scanned[@]} -gt 0 ]]; then
+    echo
+    echo "**Not scanned** (macOS privacy controls; grant Terminal Full Disk Access and re-run):"
+    for d in "${not_scanned[@]}"; do echo "- ~${d#"$HOME"}"; done
+  fi
   echo
   echo "Next: one Paperclip issue per flagged repo (project = the repo's project). Decide per"
   echo "branch: push, archive, or discard. Pushing is the owner's call. Some branches"

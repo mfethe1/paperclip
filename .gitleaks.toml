@@ -1,0 +1,7 @@
+# Default gitleaks rules, plus one narrow allowlist.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "API responses captured from a throwaway local test instance: random UUIDs (e.g. taskKey) trip generic-api-key; no credentials"
+paths = ['''^tests/fixtures/diagnose/''']

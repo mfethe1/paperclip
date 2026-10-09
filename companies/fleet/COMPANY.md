@@ -9,14 +9,14 @@ authors:
   - name: Michael Fethe
 goals:
   - Every piece of agent work is a Paperclip issue with one owner, one project, and evidence-backed completion.
-  - Durable work runs on always-on hosts (Mack) and never depends on the operator laptop being awake.
+  - Durable work runs on always-on hosts (the board host Rosie, and Mack) and never depends on the operator laptop being awake.
   - Agents on every tailnet host (Hermes, OpenClaw, Claude Code, Codex) take work from the same board.
 ---
 
 # Fleet
 
-This company is the project-management layer for the whole fleet: the Mac mini
-control plane (Mack), Rosie, Winnie, Airy, and Lenny, connected over Tailscale.
+This company is the project-management layer for the whole fleet: the board host
+(Rosie), Mack, Winnie, Airy, and Lenny, connected over Tailscale.
 
 ## Operating rules (summary; full text in the `fleet-conventions` skill)
 

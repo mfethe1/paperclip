@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Install or reconcile the fleet's Paperclip control plane on the always-on host (Mack).
+# Install or reconcile the fleet's Paperclip control plane on the board host (Rosie;
+# check a candidate first with scripts/control-plane/preflight.sh).
 #
 # Result:
 #   - paperclipai ${PAPERCLIP_VERSION} in the managed CLI store (~/.paperclip/cli)
 #   - instance in authenticated/private mode, listening on 127.0.0.1:3100 only
 #   - Tailscale Serve: https://<this-node>.<tailnet>.ts.net:3100 -> http://127.0.0.1:3100
-#     (:443 is left alone; on Mack it belongs to peer-relay)
+#     (other Serve ports, e.g. :443 for OpenClaw or peer-relay, are left alone)
 #   - background service (macOS LaunchAgent / systemd user unit)
 #
 # Idempotent. An existing instance is reconciled in place: config.json is backed up

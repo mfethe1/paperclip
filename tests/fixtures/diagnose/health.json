@@ -1,0 +1,55 @@
+{
+  "status": "ok",
+  "version": "2026.1005.0",
+  "serverVersion": "2026.1005.0",
+  "commit": "467125fafb47a8520856504fecc48d6e32055db1",
+  "deploymentMode": "local_trusted",
+  "deploymentExposure": "private",
+  "localAiLoginSupported": true,
+  "authReady": true,
+  "bootstrapStatus": "ready",
+  "bootstrapInviteActive": false,
+  "features": {
+    "companyDeletionEnabled": true
+  },
+  "serverInfo": {
+    "processStartedAt": "2026-10-01T00:00:00.000Z",
+    "git": {
+      "available": true,
+      "fullSha": "467125fafb47a8520856504fecc48d6e32055db1",
+      "shortSha": "467125f",
+      "branchName": null,
+      "subject": "Source build",
+      "committedAt": null,
+      "localChanges": {
+        "available": false,
+        "unavailableReason": "git_status_unavailable"
+      }
+    }
+  },
+  "startupRecovery": {
+    "phase": "ready",
+    "updatedAt": "2026-10-09T17:00:08.926Z"
+  },
+  "nativeRecovery": {},
+  "databaseBackup": {
+    "enabled": true,
+    "status": "warning",
+    "backupDir": "/Users/tester/.paperclip/instances/default/data/backups",
+    "maxAgeHours": 26,
+    "latestBackup": null,
+    "lastFailure": null,
+    "warnings": [
+      {
+        "code": "database_backup_missing",
+        "message": "No .sql.gz database backups found in /Users/tester/.paperclip/instances/default/data/backups."
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "database_backup_missing",
+      "message": "No .sql.gz database backups found in /Users/tester/.paperclip/instances/default/data/backups."
+    }
+  ]
+}

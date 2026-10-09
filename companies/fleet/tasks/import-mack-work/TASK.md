@@ -8,8 +8,9 @@ project: control-plane
 Goal: every live piece of work on Mack has a Paperclip issue in the right project, and
 nothing exists only on Mack's disk without an owner.
 
-1. Have Fleet Ops run `scripts/migrate/inventory-local-work.sh` on Mack and attach the
-   report. It lists repos with uncommitted changes, unpushed commits, branches with no
+1. Ask Michael (or the Hermes agent that joined from Mack) to run
+   `scripts/migrate/inventory-local-work.sh` on Mack and attach the report. Fleet Ops runs
+   on the board host and doesn't change other hosts. It lists repos with uncommitted changes, unpushed commits, branches with no
    upstream, and stashes. It never pushes.
 2. For each repo with unpushed or uncommitted work, open an issue: what the work is,
    which branch, whether it should be pushed, archived, or discarded. Pushing is the

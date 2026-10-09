@@ -6,7 +6,7 @@ project: fleet-operations
 recurring: true
 ---
 
-Run `scripts/fleet-check.sh` from the `mfethe1/paperclip` checkout on Mack and post
+Run `scripts/fleet-check.sh` from the `mfethe1/paperclip` checkout on the board host and post
 its table as a comment.
 
 For every row that is not `ok`:

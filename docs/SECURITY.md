@@ -49,9 +49,19 @@ repo private does not un-leak it.
 
 - Imported agents start **paused**; hires need board approval
   (`requireBoardApprovalForNewAgents: true`).
-- Mack agents cannot create agents and only Builder can create skills.
+- The board-host agents cannot create agents, and only the Builder can create skills.
 - Destructive, spending, credential, publishing, external-messaging, deploy, merge,
   access-control, and scheduled-activation actions require a Paperclip approval
   (`fleet-conventions` §6).
-- Give GitHub tokens per agent, fine-grained, scoped to specific repos. The Verifier gets
-  read-only scopes.
+- Give GitHub tokens per agent, fine-grained, scoped to specific repos: the Builder gets
+  `contents:write` and `pull_requests:write`, the Verifier read-only. Bind them at import
+  with `scripts/import-company.py --secret-env`.
+- **The real merge gate is GitHub.** Agents run `gh`/`git` with their token directly,
+  which bypasses Paperclip's tool policies. Require reviews with no bypass on the default
+  branch of every repo the Builder touches.
+- **Codex sandbox.** Paperclip creates `codex_local` agents with
+  `dangerouslyBypassApprovalsAndSandbox: true` by default. Whether the Verifier keeps
+  that is an explicit decision; record it here when made.
+- **Funnel stays off.** If Telegram intake or internet webhook senders are approved, the
+  Funnel is limited to the one path they need (`/api/chat-webhooks/` or
+  `/api/routine-triggers/public/`), never the whole board.

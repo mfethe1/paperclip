@@ -40,6 +40,7 @@ case "$action" in
   request)
     [[ -n "$invite" && -n "$name" ]] || die "request needs --invite and --name"
     [[ -n "${API_SERVER_KEY:-}" ]] || die "export API_SERVER_KEY (the value this host's Hermes API server runs with)"
+    export API_SERVER_KEY
     if [[ -z "$api_base_url" ]]; then
       api_base_url="https://$(tailnet_fqdn):${HERMES_GATEWAY_PORT}"
     fi
@@ -55,7 +56,7 @@ case "$action" in
         adapterType: "hermes_gateway",
         capabilities: ("Hermes gateway on " + $host),
         agentDefaultsPayload: {apiBaseUrl: $url, paperclipApiUrl: $pc, sessionKeyStrategy: "issue"}
-      }' | jq --arg key "$API_SERVER_KEY" '.agentDefaultsPayload.apiKey = $key')"
+      }' | jq '.agentDefaultsPayload.apiKey = env.API_SERVER_KEY')"   # via env, not argv (ps-visible)
     resp="$(mktemp)"
     http="$(curl -sS -o "$resp" -w '%{http_code}' -X POST -H 'content-type: application/json' \
       --data-binary @- "$paperclip/api/invites/$invite/accept" <<<"$payload")"

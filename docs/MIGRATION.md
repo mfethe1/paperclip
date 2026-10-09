@@ -5,8 +5,8 @@ crons, OpenClaw) is disabled before Phase 3's approval.
 
 ## Phase 0: stand up (no existing system touched)
 
-`docs/RUNBOOK.md` §1–4: install on Mack, claim, import `companies/fleet` paused,
-bring the four Mack agents online with smoke issues.
+`docs/RUNBOOK.md` §0–4: preflight and install on the board host (Rosie), claim, import
+`companies/fleet` paused, bring its four agents online with smoke issues.
 
 ## Phase 1: bring the work in
 

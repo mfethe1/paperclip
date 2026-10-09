@@ -2,7 +2,7 @@
   "_comment": "Copy to fleet/hosts.json (gitignored) and fill in. 'dns' is the MagicDNS short name from `tailscale status`; aliases are what agents and docs use.",
   "tailnet_suffix": "tailXXXXXX.ts.net",
   "control_plane": {
-    "host": "mack",
+    "host": "rosie",
     "port": 3100,
     "_url_note": "optional: \"url\" overrides https://<dns>.<suffix>:<port>"
   },
@@ -10,7 +10,7 @@
     "mack": {
       "dns": "<mack-magicdns-name>",
       "os": "macos",
-      "role": "control plane, durable execution",
+      "role": "main Hermes worker, heavy builds",
       "always_on": true,
       "gateways": {
         "hermes": 8642
@@ -19,7 +19,7 @@
     "rosie": {
       "dns": "<rosie-magicdns-name>",
       "os": "macos",
-      "role": "OpenClaw integrations, home automation",
+      "role": "board host (Paperclip), OpenClaw",
       "always_on": true,
       "gateways": {
         "openclaw": 443

@@ -2,8 +2,8 @@ name: ci
 
 on:
   pull_request:
+  # Every branch: the repo's default branch is not `main`, and agents push to it.
   push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -23,6 +23,33 @@ jobs:
         run: python tools/validate_company.py
       - name: Shellcheck
         run: shellcheck scripts/*.sh scripts/*/*.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Script smoke test (stubbed externals)
+        run: BASH_BIN=bash NODE24="$(command -v node)" sh tests/portability-smoke.sh
+
+  # The board host and Mack are Macs: /bin/bash is 3.2.57, userland is BSD, and
+  # the stock python3 has no PyYAML.
+  mac-portability:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Scripts under /bin/bash 3.2 with stubbed externals
+        run: |
+          /bin/bash --version | head -1
+          BASH_BIN=/bin/bash NODE24="$(command -v node)" sh tests/portability-smoke.sh
+      - name: Validator on stock python3 (no PyYAML)
+        run: /usr/bin/python3 -I tools/validate_company.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyyaml
+      - name: diagnose.sh under /bin/bash against captured board responses
+        run: TEST_BASH=/bin/bash python -m unittest tests.test_tools.DiagnoseTest -v
 
   gitleaks:
     runs-on: ubuntu-latest
@@ -80,6 +107,17 @@ jobs:
           curl -fsS $api/companies/$cid/routines | jq -e 'length == 2 and all(.status == "paused")'
           curl -fsS $api/companies/$cid/projects | jq -e 'length == 3'
           curl -fsS "$api/companies/$cid/issues" | jq -e 'length == 3'
+          echo "cid=$cid" >> "$GITHUB_ENV"
+      - name: Re-import is refused, then idempotent
+        run: |
+          api=http://127.0.0.1:3100/api
+          set +e; python scripts/import-company.py companies/fleet; rc=$?; set -e
+          test "$rc" -eq 2
+          python scripts/import-company.py companies/fleet --company-id "$cid" --collision skip
+          curl -fsS $api/companies | jq -e 'length == 1'
+          curl -fsS $api/companies/$cid/routines | jq -e 'length == 2'
+          curl -fsS "$api/companies/$cid/issues" | jq -e 'length == 3'
+          curl -fsS $api/companies/$cid/agents | jq -e 'length == 4'
       - name: Server log on failure
         if: failure()
         run: tail -200 "$RUNNER_TEMP/server.log" || true

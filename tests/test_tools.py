@@ -279,6 +279,79 @@ class PackageReposTest(unittest.TestCase):
                          ["https://github.com/mfethe1/paperclip"])
 
 
+class DiagnoseTest(unittest.TestCase):
+    """scripts/diagnose.sh against responses captured from a real 2026.1005.0 board
+    (a Claude agent with no login and a Codex agent with no credentials)."""
+
+    FIX = ROOT / "tests" / "fixtures" / "diagnose"
+
+    def serve(self):
+        import http.server
+        import re as _re
+        import threading
+        fix, methods = self.FIX, []
+        routes = [
+            (r"^/api/health$", "health.json"),
+            (r"^/api/companies$", "companies.json"),
+            (r"^/api/companies/[^/]+/agents$", "agents.json"),
+            (r"^/api/companies/[^/]+/heartbeat-runs$", "runs.json"),
+            (r"^/api/companies/[^/]+/issues$", "issues.json"),
+            (r"^/api/companies/[^/]+/adapters/codex_local/auth-signal$", "codex-auth.json"),
+            (r"^/api/heartbeat-runs/([^/]+)$", "runs/{0}.json"),
+            (r"^/api/issues/([^/]+)/recovery-actions$", "recovery/{0}.json"),
+        ]
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _any(self):
+                methods.append(self.command)
+                path = self.path.split("?")[0]
+                for pattern, name in routes:
+                    m = _re.match(pattern, path)
+                    if m and self.command == "GET":
+                        f = fix / name.format(*m.groups())
+                        if f.is_file():
+                            body = f.read_bytes()
+                            self.send_response(200)
+                            self.send_header("content-type", "application/json")
+                            self.end_headers()
+                            self.wfile.write(body)
+                            return
+                self.send_response(404)
+                self.end_headers()
+            do_GET = do_POST = do_PATCH = do_PUT = do_DELETE = _any
+
+            def log_message(self, *a):
+                pass
+
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.shutdown)
+        return f"http://127.0.0.1:{srv.server_address[1]}", methods
+
+    def test_report_groups_failures_and_stays_read_only(self):
+        if not shutil.which("jq"):
+            self.skipTest("jq not installed")
+        url, methods = self.serve()
+        cid = (self.FIX / "COMPANY_ID").read_text().strip()
+        bash = os.environ.get("TEST_BASH", "bash")  # CI on macOS sets /bin/bash (3.2)
+        r = subprocess.run([bash, str(ROOT / "scripts" / "diagnose.sh"), "--board-url", url,
+                            "--company-id", cid, "--server-log", str(self.FIX / "server-epipe.log"), "--strict"],
+                           capture_output=True, text=True, timeout=120)
+        out = r.stdout
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertEqual(set(methods), {"GET"})
+        self.assertIn("### FAIL: Claude Code is not logged in for the service user", out)
+        self.assertIn("3 failed run(s)", out)
+        self.assertIn("automatic retries exhausted", out)
+        self.assertIn("### FAIL: Codex has no credentials for the service user", out)
+        self.assertIn("CRITICAL: server crashed on stdin EPIPE", out)
+        self.assertIn("WARN: database_backup_missing", out)
+        self.assertIn("FLE-5: configuration_validation", out)
+        self.assertNotIn("/Users/", out)
+        self.assertNotIn("/home/", out)
+        self.assertNotRegex(out, r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
 class CliTest(unittest.TestCase):
     def test_validator_runs_without_pyyaml(self):
         with tempfile.TemporaryDirectory() as d:
