@@ -76,6 +76,8 @@ def race(path, req, gate, queue):
     ledger = None
     try:
         ledger = Ledger(path, RECEIPT)
+        # Tell the parent initialization is complete before the race begins.
+        queue.put(("ready", None))
         gate.wait(5)
         result = ("ok", ledger.admit(req))
     except (Denied, sqlite3.Error) as error:

@@ -55,6 +55,9 @@ class LedgerTests(fixtures.CandidateCase):
         ]
         for child in children:
             child.start()
+        self.assertEqual(
+            [queue.get(timeout=10)[0] for _ in children], ["ready"] * len(children)
+        )
         gate.set()
         results = [queue.get(timeout=10) for _ in children]
         for child in children:
@@ -79,6 +82,9 @@ class LedgerTests(fixtures.CandidateCase):
         ]
         for child in children:
             child.start()
+        self.assertEqual(
+            [queue.get(timeout=10)[0] for _ in children], ["ready"] * len(children)
+        )
         gate.set()
         results = [queue.get(timeout=10) for _ in children]
         for child in children:
