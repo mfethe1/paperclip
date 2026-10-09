@@ -11,7 +11,12 @@
 # Idempotent. An existing instance is reconciled in place: config.json is backed up
 # and only server/telemetry fields are changed. Data, DB and secrets are never touched.
 #
-# Usage: scripts/control-plane/install.sh [--dry-run] [--keep-telemetry]
+# Node: Paperclip needs Node >= 24.11. The system default node is left alone; a
+# side-by-side Node 24 (Homebrew node@24, nvm, fnm, volta, asdf, mise) is used for
+# the install and pinned into Paperclip's launcher. --install-node runs
+# `brew install node@24` (keg-only) when none is found.
+#
+# Usage: scripts/control-plane/install.sh [--dry-run] [--install-node] [--keep-telemetry]
 set -euo pipefail
 # shellcheck source=../lib/common.sh
 source "$(dirname "$0")/../lib/common.sh"
@@ -21,7 +26,8 @@ for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --keep-telemetry) KEEP_TELEMETRY=1 ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    --install-node) INSTALL_NODE=1 ;;
+    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
     *) die "unknown argument: $arg" ;;
   esac
 done
@@ -29,7 +35,7 @@ export DRY_RUN="${DRY_RUN:-0}"
 
 need jq
 need curl
-require_node24
+INSTALL_NODE="${INSTALL_NODE:-0}" ensure_node24
 TS="$(tailscale_bin)"
 "$TS" status >/dev/null 2>&1 || die "tailscale is not up on this host (run: tailscale up)"
 FQDN="$(tailnet_fqdn)"
@@ -40,7 +46,9 @@ log "control plane host: $FQDN"
 # 1. Managed, pinned CLI install (atomic switch, keeps two rollbacks).
 if [[ "$(paperclipai --version 2>/dev/null || true)" != "$PAPERCLIP_VERSION" ]]; then
   log "installing paperclipai ${PAPERCLIP_VERSION} into the managed CLI store"
-  run npx -y "paperclipai@${PAPERCLIP_VERSION}" install --version "$PAPERCLIP_VERSION" --yes
+  # Runs under the Node 24 that ensure_node24 put first on PATH; the managed shim
+  # (~/.local/bin/paperclipai) pins that Node for the CLI and the LaunchAgent.
+  run npx -y "paperclipai@${PAPERCLIP_VERSION}" install --version "$PAPERCLIP_VERSION"
   export PATH="$HOME/.local/bin:$PATH"
 fi
 [[ "$DRY_RUN" == "1" ]] || [[ "$(paperclipai --version)" == "$PAPERCLIP_VERSION" ]] \

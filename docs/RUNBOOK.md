@@ -12,15 +12,20 @@ board exists, Michael's explicit go-ahead) naming the host and the commands.
 ## 1. Install the control plane (Mack)
 
 **Prerequisites**
-- Node.js ≥ 24.11 (`node -v`), `jq`, `curl`
+- Node.js ≥ 24.11 **side by side** with the default `node`. Mack's default is Node 22, and other
+  services depend on it, so don't replace it. `install.sh` finds Homebrew `node@24` (keg-only), nvm,
+  fnm, volta, asdf, or mise installs. If none exists, pass `--install-node` to run
+  `brew install node@24`, or run that yourself first. Paperclip's launcher pins the Node that
+  installed it, so the service keeps using Node 24 whatever `node` is on PATH.
+- `jq`, `curl` (both ship with macOS 15)
 - Tailscale logged in, with MagicDNS and HTTPS certificates enabled for the tailnet
   (admin console → DNS). `tailscale serve` needs HTTPS certs.
 - Run as the macOS user that owns Claude Code and Codex logins on Mack.
 
 ```sh
 cd ~/paperclip
-scripts/control-plane/install.sh --dry-run   # shows every mutating command
-scripts/control-plane/install.sh
+scripts/control-plane/install.sh --dry-run --install-node   # shows every mutating command
+scripts/control-plane/install.sh --install-node
 ```
 
 What it does (idempotent; re-run it any time, e.g. after a Tailscale upgrade drops Serve):
@@ -157,6 +162,7 @@ Rosie's OpenClaw gateway already sits behind Tailscale Serve `:443`.
 | Symptom | Fix |
 |---|---|
 | Board unreachable after a Mack reboot | FileVault is waiting for an unlock. Unlock remotely. Next time use `sudo fdesetup authrestart` |
+| `paperclipai` or the service fails with "no such file" for a `.../Cellar/node@24/<old>/bin/node` path | Homebrew upgraded `node@24` and cleaned up the old version that Paperclip's launcher pinned. Re-run `scripts/control-plane/install.sh`, which reinstalls and re-pins |
 | Board fine on Mack's loopback but not on the tailnet | Serve mapping lost (Tailscale upgrades have done this). Re-run `scripts/control-plane/install.sh` |
 | `This hostname is not allowed` (403) | Wrong hostname. Use the MagicDNS name, or `paperclipai allowed-hostname <name>` and restart |
 | A remote agent's runs fail | `fleet-check.sh` gateway row; fix the host; the next heartbeat retries |

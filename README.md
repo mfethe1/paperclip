@@ -36,7 +36,9 @@ is specific to us:
 
 ```sh
 git clone https://github.com/mfethe1/paperclip ~/paperclip && cd ~/paperclip
-scripts/control-plane/install.sh            # idempotent; --dry-run to preview
+scripts/control-plane/install.sh --install-node   # idempotent; --dry-run to preview
+                                                  # --install-node: brew install node@24 if no Node 24 is found
+                                                  # (side by side; your default node is untouched)
 # claim the admin in a browser at the printed URL, then:
 scripts/control-plane/lock-signup.sh
 # import the company, paused:

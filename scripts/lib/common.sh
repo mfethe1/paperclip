@@ -84,14 +84,69 @@ assert_requires_auth() {
   log "$url without credentials -> HTTP $code (ok, not 200)"
 }
 
-require_node24() {
-  need node "Paperclip requires Node.js >= 24.11"
-  local v
-  v="$(node -p 'process.versions.node')"
-  node -e '
-    const [a,b]=process.versions.node.split(".").map(Number);
-    process.exit(a>24||(a===24&&b>=11)?0:1)' \
-    || die "Node.js $v is too old; Paperclip ${PAPERCLIP_VERSION} requires >= 24.11"
+# Paperclip needs Node >= 24.11. Hosts like Mack keep an older default `node` for
+# other services (Hermes, Buzz, OpenClaw), so never replace it: find a side-by-side
+# Node 24+ and put it first on PATH for this script only. `paperclipai install`
+# pins whichever Node runs it into its launcher shim, so the background service
+# keeps using Node 24 regardless of the system default.
+node_ok() {
+  "$1" -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>24||(a===24&&b>=11)?0:1)' 2>/dev/null
+}
+
+find_node24() {
+  local c prefix restore
+  local candidates=()
+  if [[ -n "${PAPERCLIP_NODE:-}" ]]; then candidates+=("$PAPERCLIP_NODE"); fi
+  if command -v node >/dev/null 2>&1; then candidates+=("$(command -v node)"); fi
+  if command -v brew >/dev/null 2>&1; then
+    prefix="$(brew --prefix 2>/dev/null || true)"
+    if [[ -n "$prefix" ]]; then candidates+=("$prefix/opt/node@24/bin/node" "$prefix/opt/node/bin/node"); fi
+  fi
+  candidates+=(/opt/homebrew/opt/node@24/bin/node /usr/local/opt/node@24/bin/node)
+  # Version managers (nvm, fnm, volta, asdf, mise). nullglob keeps unmatched patterns out.
+  restore="$(shopt -p nullglob || true)"
+  shopt -s nullglob
+  for c in "$HOME"/.nvm/versions/node/v2[4-9].*/bin/node \
+           "$HOME"/.local/share/fnm/node-versions/v2[4-9].*/installation/bin/node \
+           "$HOME/Library/Application Support/fnm/node-versions"/v2[4-9].*/installation/bin/node \
+           "$HOME"/.volta/tools/image/node/2[4-9].*/bin/node \
+           "$HOME"/.asdf/installs/nodejs/2[4-9].*/bin/node \
+           "$HOME"/.local/share/mise/installs/node/2[4-9]*/bin/node; do
+    candidates+=("$c")
+  done
+  eval "$restore"
+  for c in "${candidates[@]}"; do
+    if [[ -x "$c" ]] && node_ok "$c"; then
+      printf '%s\n' "$c"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Usage: INSTALL_NODE=1 ensure_node24   (INSTALL_NODE=1 allows `brew install node@24`)
+ensure_node24() {
+  local node24 bindir current
+  current="$(node -v 2>/dev/null || echo none)"
+  if ! node24="$(find_node24)"; then
+    if [[ "${INSTALL_NODE:-0}" != "1" ]]; then
+      die "Paperclip ${PAPERCLIP_VERSION} needs Node.js >= 24.11; the default node here is ${current}.
+  Install Node 24 side by side (keg-only; does NOT change your default node):
+      brew install node@24
+  then re-run this script, or re-run it with --install-node to do that for you."
+    fi
+    need brew "Homebrew is required for --install-node (https://brew.sh)"
+    log "installing Homebrew node@24 (keg-only: the default node stays ${current})"
+    run brew install node@24
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+      log "[dry-run] would continue with Homebrew node@24"
+      return 0
+    fi
+    node24="$(find_node24)" || die "brew installed node@24 but it was not found; check: brew --prefix node@24"
+  fi
+  bindir="$(dirname "$node24")"
+  export PATH="$bindir:$PATH"
+  log "using Node $("$node24" -v) from $bindir for Paperclip (default node unchanged: ${current})"
 }
 
 # Paperclip CLI pinned to the fleet version, regardless of what's on PATH.
@@ -100,6 +155,7 @@ pc() {
      && [[ "$(paperclipai --version 2>/dev/null)" == "$PAPERCLIP_VERSION" ]]; then
     paperclipai "$@"
   else
+    ensure_node24
     npx -y "paperclipai@${PAPERCLIP_VERSION}" "$@"
   fi
 }
