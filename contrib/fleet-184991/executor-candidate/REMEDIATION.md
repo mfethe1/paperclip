@@ -15,8 +15,7 @@
 ## Evidence
 
 - `evidence/remediation-before.log`: eight real regression tests against original a3bb8cd, failing with 13 assertions/subtests across F2–F7.
-- `evidence/remediation-after.log`: full 33-test discovery rerun, with an intermittent competing-process queue timeout still reproduced. **This concurrency verification issue is unresolved.**
-- `evidence/remediation-repeat.log`: immediate full rerun, all 33 tests pass (original 17 plus 16 regressions). One passing run does not resolve the intermittent failure.
+- `evidence/remediation-after.log`: full 33-test discovery rerun, with an intermittent competing-process queue timeout still reproduced. **This was a harness startup race, not a ledger failure:** `test_separate_process_competing_attempts` started reading outcomes immediately after setting the release event, while spawned children could still be constructing the ledger; the fixed 10-second result-queue window therefore included nondeterministic process startup and SQLite initialization. The original log confirms `_queue.Empty` at `queue.get(timeout=10)` (no SQLite error or assertion failure). Regression: each child now sends a readiness receipt only after opening its ledger; parent waits for all four readiness receipts before releasing contention. `evidence/remediation-repeat.log` remains historical evidence for the old harness, not a post-fix result.
 - `evidence/remediation-ruff.log`: isolated E4/E7/E9/F/I/BLE/PLW1510 checks.
 - AST parse checks are syntax checks, not strict static type checking. No type checker was installed.
 - Tests use the protected Hermes scratch directory explicitly. Ambient macOS `/var` is a symlink and intentionally not accepted as a protected host-config/ledger ancestor.
