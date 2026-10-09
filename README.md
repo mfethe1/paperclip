@@ -32,10 +32,11 @@ is specific to us:
 | Remote agents joined (Rosie OpenClaw, Hermes gateways) | **Not done.** Host changes need approval, see `docs/RUNBOOK.md` |
 | Which system is the authority for task state (Paperclip vs Buzz/Kanban) | **Open decision.** See [Architecture § Authority](docs/ARCHITECTURE.md#authority-where-each-kind-of-state-lives) |
 
-## Quick start (on Mack)
+## Quick start (on the board host: Rosie)
 
 ```sh
 git clone https://github.com/mfethe1/paperclip ~/paperclip && cd ~/paperclip
+scripts/control-plane/preflight.sh                  # read-only: is this machine ready to host the board?
 scripts/control-plane/install.sh --install-node   # idempotent; --dry-run to preview
                                                   # --install-node: brew install node@24 if no Node 24 is found
                                                   # (side by side; your default node is untouched)
