@@ -1,0 +1,11 @@
+# Candidate code under contrib/fleet-184991 is preserved byte-identical to
+# independently reviewed private source commits (see manifest.json: each
+# preserved file records source_sha256 == published sha256). Style-only
+# findings are waived for those preserved files so the review linkage stays
+# verifiable. Files authored for this consolidation (tests/, docs) are held
+# to full lint.
+
+[lint.per-file-ignores]
+"connector-admission/test_admission.py" = ["SIM117", "I001"]
+"connector-admission-rejected/admission.py" = ["B018"]
+"connector-admission-rejected/test_admission.py" = ["SIM117", "I001"]
