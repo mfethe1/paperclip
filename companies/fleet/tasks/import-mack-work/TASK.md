@@ -19,8 +19,8 @@ nothing exists only on Mack's disk without an owner.
    `scripts/migrate/build-overlay.py`, then load it with `scripts/import-company.py
    exports/overlay --company-id <id> --include projects,issues --collision skip`,
    after reviewing a `--dry-run` (docs/MIGRATION.md, 1b).
-4. For Hermes Kanban boards and Buzz tasks, list open cards by project and propose the
-   mapping in a comment. Don't bulk-import until the authority decision
-   (`decide-task-authority`) is approved.
+4. Hermes Kanban cards move to the board through `retire-hermes-kanban`. Buzz tasks:
+   list the open ones and propose which become issues; Buzz itself stays as the
+   people layer (`buzz-people-layer`).
 
 Done when the inventory report shows no unowned work and each imported item links its source.

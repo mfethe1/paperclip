@@ -182,6 +182,94 @@ class OverlayTest(unittest.TestCase):
             self.assertEqual(validate_company.validate_package(out).errors, [])
 
 
+class CardsOverlayTest(unittest.TestCase):
+    def test_cards_map_status_skip_closed_and_validate(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            cards = d / "cards.json"
+            cards.write_text(json.dumps([
+                {"title": "Wire alerts", "body": "Link issues.", "status": "ready",
+                 "project": "fleet-operations", "priority": "high", "source": "kanban:ops/42"},
+                {"title": "Finished", "status": "done"},
+                {"title": "Raw idea | with: punctuation", "status": "triage"},
+                {"title": "Was running", "status": "running", "priority": "urgent"},
+            ]))
+            out = d / "overlay"
+            old_argv, sys.argv = sys.argv, ["build-overlay.py", "--cards", str(cards), "--out", str(out)]
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(build_overlay.main(), 0)
+            finally:
+                sys.argv = old_argv
+            ext = pcyaml.parse((out / ".paperclip.yaml").read_text())
+            statuses = sorted((v["status"], v.get("priority", "")) for v in ext["tasks"].values())
+            self.assertEqual(statuses, [("backlog", ""), ("todo", ""), ("todo", "high")])
+            texts = "\n".join(p.read_text() for p in out.glob("projects/*/tasks/*/TASK.md"))
+            self.assertIn("Imported from kanban:ops/42", texts)
+            self.assertIn("Status there: `running`", texts)
+            self.assertNotIn("Finished", texts)
+            self.assertTrue((out / "projects" / "fleet-operations" / "PROJECT.md").is_file())
+            self.assertEqual(validate_company.validate_package(out).errors, [])
+
+    def test_unknown_card_status_is_an_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            cards = Path(d) / "cards.json"
+            cards.write_text(json.dumps([{"title": "x", "status": "someday"}]))
+            with self.assertRaises(ValueError):
+                build_overlay.load_cards(cards)
+
+
+class HermesHostScriptsTest(unittest.TestCase):
+    """enable-hermes-api.sh and the dotenv helpers, against a throwaway HERMES_HOME."""
+
+    BASH = os.environ.get("TEST_BASH", "bash")
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.env_file = self.tmp / ".env"
+        self.env_file.write_text('OPENROUTER_API_KEY=sk-or-x\nexport API_SERVER_HOST="0.0.0.0"\n')
+        self.env = {**os.environ, "HERMES_HOME": str(self.tmp), "HOME": str(self.tmp)}
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def sh(self, *args, stdin=None):
+        return subprocess.run([self.BASH, *args], capture_output=True, text=True, env=self.env,
+                              input=stdin, timeout=60, cwd=ROOT)
+
+    def values(self):
+        return dict(l.split("=", 1) for l in self.env_file.read_text().splitlines() if "=" in l)
+
+    def test_dotenv_helpers(self):
+        r = self.sh("-c", 'source scripts/lib/common.sh; f="$HERMES_HOME/.env"; '
+                    'dotenv_get "$f" API_SERVER_HOST; dotenv_set "$f" API_SERVER_HOST <<<"127.0.0.1"; '
+                    'dotenv_set "$f" NEW <<<"a=b c"; dotenv_get "$f" NEW')
+        self.assertEqual(r.stdout.splitlines(), ["0.0.0.0", "a=b c"], r.stderr)
+        self.assertEqual(self.values()["API_SERVER_HOST"], "127.0.0.1")
+        self.assertNotIn("export", self.env_file.read_text())
+        self.assertEqual(oct(self.env_file.stat().st_mode & 0o777), "0o600")
+
+    def test_enable_keeps_key_and_never_prints_it(self):
+        dry = self.sh("scripts/node/enable-hermes-api.sh", "--dry-run")
+        self.assertEqual(dry.returncode, 0, dry.stderr)
+        self.assertNotIn("API_SERVER_ENABLED", self.values())
+        r = self.sh("scripts/node/enable-hermes-api.sh")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        v = self.values()
+        self.assertEqual((v["API_SERVER_ENABLED"], v["API_SERVER_HOST"], v["API_SERVER_PORT"]),
+                         ("true", "127.0.0.1", "8642"))
+        self.assertRegex(v["API_SERVER_KEY"], r"^[0-9a-f]{64}$")
+        self.assertNotIn(v["API_SERVER_KEY"], r.stdout + r.stderr)
+        self.assertEqual(v["OPENROUTER_API_KEY"], "sk-or-x")
+        self.assertTrue(list(self.tmp.glob(".env.bak-*")))
+        again = self.sh("scripts/node/enable-hermes-api.sh")
+        self.assertEqual(self.values()["API_SERVER_KEY"], v["API_SERVER_KEY"])
+        self.assertIn("kept the existing API_SERVER_KEY", again.stderr)
+        off = self.sh("scripts/node/enable-hermes-api.sh", "--off")
+        self.assertEqual(off.returncode, 0, off.stderr)
+        self.assertEqual(self.values()["API_SERVER_ENABLED"], "false")
+        self.assertEqual(self.values()["API_SERVER_KEY"], v["API_SERVER_KEY"])
+
 class NormalizeExportTest(unittest.TestCase):
     def test_keeps_definitions_drops_runtime_state(self):
         with tempfile.TemporaryDirectory() as d:

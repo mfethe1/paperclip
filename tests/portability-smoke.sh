@@ -58,7 +58,7 @@ check() {
 }
 
 "$BASH_BIN" --version | head -1
-for f in "$ROOT"/scripts/*.sh "$ROOT"/scripts/*/*.sh; do
+for f in "$ROOT"/scripts/*.sh "$ROOT"/scripts/*/*.sh "$ROOT"/hermes/skills/*/scripts/*.sh "$ROOT"/tests/*.sh; do
   "$BASH_BIN" -n "$f" || { echo "FAIL syntax $f"; fail=1; }
 done
 echo "ok   syntax check (bash -n) on all scripts"
@@ -79,6 +79,19 @@ check "commitments.sh (unreachable board)" "$BASH_BIN" scripts/commitments.sh --
 check "inventory-local-work.sh" env MAXDEPTH=2 "$BASH_BIN" scripts/migrate/inventory-local-work.sh "$T/home"
 check "expose-gateway.sh (no gateway)" "$BASH_BIN" scripts/node/expose-gateway.sh hermes --dry-run
 check "join-hermes.sh (usage)" "$BASH_BIN" scripts/node/join-hermes.sh request --paperclip http://127.0.0.1:9
+mkdir -p "$T/home/.hermes"; printf 'API_SERVER_HOST=0.0.0.0\n' > "$T/home/.hermes/.env"
+check "enable-hermes-api.sh --dry-run" "$BASH_BIN" scripts/node/enable-hermes-api.sh --dry-run
+check "enable-hermes-api.sh (no launchd job)" "$BASH_BIN" scripts/node/enable-hermes-api.sh
+grep -q '^API_SERVER_KEY=[0-9a-f]\{64\}$' "$T/home/.hermes/.env" || { echo "FAIL enable-hermes-api.sh wrote no key"; fail=1; }
+SK=hermes/skills/paperclip-fleet/scripts
+PCENV="PAPERCLIP_API_URL=http://127.0.0.1:9 PAPERCLIP_API_KEY=x PAPERCLIP_COMPANY_ID=c PAPERCLIP_AGENT_ID=a"
+# shellcheck disable=SC2086  # PCENV is deliberately split into env assignments
+check "paperclip-intake.sh (unreachable board)" env $PCENV "$BASH_BIN" $SK/paperclip-intake.sh --title t
+# shellcheck disable=SC2086
+check "paperclip-my-work.sh (unreachable board)" env $PCENV "$BASH_BIN" $SK/paperclip-my-work.sh
+# shellcheck disable=SC2086
+check "paperclip-issue-update.sh (unreachable board)" env $PCENV "$BASH_BIN" $SK/paperclip-issue-update.sh \
+  --issue-id FLE-1 --status done --run-id 00000000-0000-4000-8000-000000000000
 check "export-company.sh (usage)" "$BASH_BIN" scripts/export-company.sh
 check "discover-projects.sh --help" "$BASH_BIN" scripts/migrate/discover-projects.sh --help
 check "lock-signup.sh (no instance)" "$BASH_BIN" scripts/control-plane/lock-signup.sh

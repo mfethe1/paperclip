@@ -43,7 +43,10 @@ CATALOG="$REPO_ROOT/tools/agent-errors.tsv"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 AUTH=()
-if [[ -n "${PAPERCLIP_API_KEY:-}" ]]; then AUTH=(-H "authorization: Bearer ${PAPERCLIP_API_KEY}"); fi
+if [[ -n "${PAPERCLIP_API_KEY:-}" ]]; then  # header file, not argv: ps can't show the key
+  printf 'authorization: Bearer %s\n' "$PAPERCLIP_API_KEY" > "$WORK/auth.hdr"
+  AUTH=(-H "@$WORK/auth.hdr")
+fi
 CALLS="$WORK/calls.txt"; : > "$CALLS"
 
 # The only way this script talks to the board.

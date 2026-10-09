@@ -127,41 +127,64 @@ paperclipai company list --api-base "$PAPERCLIP_API_URL"    # note the company i
 
 ## 5. Join a host: Hermes (Mack first)
 
-Mack's Hermes is the main worker. Enabling its API server exposes that Hermes to
-Paperclip-driven runs. On Mack the gateway (`ai.hermes.gateway`) also runs the
-production cron registry, so decide first, in the approval:
-- **A. Main gateway:** set `API_SERVER_ENABLED=true` and `API_SERVER_KEY` in the
-  gateway's environment. Paperclip runs then see the full Hermes context.
-- **B. Separate Hermes install or profile** dedicated to Paperclip work: less blast radius,
-  but it doesn't share the main gateway's memory.
+Decided 2026-10-09: Mack's **main** Hermes gateway joins (option A), so Paperclip runs
+see Hermes's full context. That gateway also runs Mack's production crons. Restarting
+it interrupts in-flight chats and cron runs for a few seconds, so pick a quiet moment.
+
+On **Mack**, in Terminal, as the user that runs Hermes, in `~/paperclip` (`git pull` first):
 
 ```sh
-# On the Hermes host. Store the key the way that host stores other Hermes secrets, never
-# in a repo. Hermes processes can't load launch agents, so a person runs launchctl.
-export API_SERVER_KEY="$(openssl rand -hex 32)"
-API_SERVER_ENABLED=true hermes gateway run --replace --accept-hooks   # or via the host's service unit
+# 1. Turn on Hermes's API server: loopback only, with a random key (never printed).
+#    Edits ~/.hermes/.env (backed up first) and restarts ai.hermes.gateway.
+scripts/node/enable-hermes-api.sh --restart
 
-# Publish it to the tailnet: HTTPS on the same-number port 8642. It refuses to publish a
-# gateway that answers without the key.
+# 2. Publish it to the tailnet over HTTPS (port 8642). Refuses to publish a gateway
+#    that answers without the key.
 scripts/node/expose-gateway.sh hermes
-
-# Board side (any tailnet machine): create an agent invite
-paperclipai invite create -C <company-id> --payload-json '{"allowedJoinTypes":"agent"}' --json | jq -r .token
-
-# On the Hermes host: request to join (API_SERVER_KEY still exported)
-scripts/node/join-hermes.sh request --paperclip "$BOARD" --invite <token> --name "Hermes (Mack)"
-
-# Board: approve
-paperclipai join approve <request-id> -C <company-id>
-
-# On the Hermes host: claim the agent key (saved 0600 under ~/.config/paperclip-fleet/)
-scripts/node/join-hermes.sh claim --paperclip "$BOARD" --request <request-id>
-
-# Board: put it in the org chart. Check the echoed JSON: misspelled keys are dropped silently.
-paperclipai agent update <agent-id> --json --payload-json '{"reportsTo":"<chief-of-staff-id>","title":"Hermes on Mack","role":"engineer"}'
 ```
 
+On **Rosie** (the board host, logged in as in §3): create an agent invite and copy its token:
+
+```sh
+paperclipai invite create -C <company-id> --payload-json '{"allowedJoinTypes":"agent"}' --json | jq -r .token
+```
+
+Back on **Mack**:
+
+```sh
+BOARD=https://<board-host>.<tailnet>.ts.net:3100
+# 3. Ask to join. Reads API_SERVER_KEY from ~/.hermes/.env.
+scripts/node/join-hermes.sh request --paperclip "$BOARD" --invite <token> --name "Hermes (Mack)"
+```
+
+On **Rosie**: `paperclipai join approve <request-id> -C <company-id>` (or approve the
+pending join request in the board UI).
+
+On **Mack**:
+
+```sh
+# 4. Claim the agent key. Also writes PAPERCLIP_* to ~/.hermes/.env, installs the
+#    `paperclip` and `paperclip-fleet` skills under ~/.hermes/skills, and restarts Hermes.
+scripts/node/join-hermes.sh claim --paperclip "$BOARD" --request <request-id> --restart
+```
+
+On the **board**: open the new agent and set **Reports to** = Chief of Staff, **Title** =
+"Hermes on Mack", **Role** = engineer. CLI alternative (check the echoed JSON, because
+misspelled keys are dropped silently): `paperclipai agent update <agent-id> --json
+--payload-json '{"reportsTo":"<chief-of-staff-id>","title":"Hermes on Mack","role":"engineer"}'`.
 Then run a smoke issue as in §4.
+
+Then test intake from Telegram: ask Hermes to "track: renew the company domain by
+Oct 30". It should reply with an `FLE-…` key, and the issue should appear in Intake.
+
+What the claim gives Hermes, and why: Paperclip's wake tells Hermes to update the
+issue itself, and Paperclip accepts that only with the agent's key plus the run id from
+the wake. Without the key, Hermes's runs would end with no disposition, and Paperclip
+would block the issue. `tests/hermes-loop-smoke.sh` checks the whole loop (join → wake →
+Hermes closes its issue) against a stand-in Hermes in CI.
+
+**Roll back:** `scripts/node/enable-hermes-api.sh --off --restart`, then
+`tailscale serve --https=8642 off`. Pause or terminate the agent on the board.
 
 ## 6. Join a host: OpenClaw (Rosie)
 
@@ -235,8 +258,7 @@ target agent (and routine, if any) resumed first; otherwise calls fail with 409
 
 | Feature | What it gives the fleet | Constraint | Upstream docs |
 |---|---|---|---|
-| **Discord chat intake** | Requests in a Discord channel become Intake issues; replies post back | Use a dedicated bot. Lock the endpoint to Michael: no unlinked people, and group chats only if wanted | `doc/CHANNELS.md` |
-| **Telegram chat intake** | Same, in the Telegram threads the fleet already uses | Needs a public HTTPS URL, i.e. a Tailscale Funnel limited to `/api/chat-webhooks/`, plus a **new** BotFather bot (never Hermes's bot). Decide the Funnel question first | `doc/CHANNELS.md` |
+| **Paperclip's own chat connectors** (Telegram, Discord, Slack) | Talk to the Chief of Staff directly in chat; requests become issues and replies post back | **Experimental** in 2026.1005.0: Instance settings → Experimental → Chat connectors (`enableChatConnectors`), and may change between releases. Telegram also needs a public HTTPS webhook origin: set `PAPERCLIP_CHAT_WEBHOOK_PUBLIC_URL` in `~/.paperclip/instances/default/.env`, behind a Tailscale Funnel limited to `/api/chat-webhooks/` on port 443 or 8443, plus a **new** BotFather bot (never Hermes's bot). Discord needs no public endpoint. Not needed today: Telegram intake runs through Hermes (§5) | `docs/guides/board-operator/experimental-features.md` |
 | **Routine webhooks** | Hermes crons or CI can trigger a Paperclip routine (with HMAC signing) instead of running work themselves | Senders on the tailnet need nothing extra; internet senders need a Funnel limited to `/api/routine-triggers/public/`. Store the one-time secret in the sender's secret store | `docs/api/routines.md` |
 | **Task watchdog** | Flags runs that are stuck or silent on long-running umbrella issues | Attach only to in-flight umbrella issues; on a backlog issue it fires immediately. The watchdog agent can't be paused or budget-capped | `doc/TASK-WATCHDOG.md` |
 | **Budgets** | Monthly spend caps per agent, with alerts | Set `budgetMonthlyCents` before resuming any agent on a metered API (Hermes or OpenClaw with API keys). Subscription logins report little spend | `docs/guides/board-operator/costs-and-budgets.md` |

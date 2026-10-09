@@ -36,6 +36,8 @@ agents:
   verifier:
     adapter:
       type: codex_local
+      config:
+        dangerouslyBypassApprovalsAndSandbox: false
     permissions:
       canCreateAgents: false
       canCreateSkills: false
@@ -75,8 +77,11 @@ tasks:
     priority: high
   connect-remote-agents:
     priority: high
-  decide-task-authority:
+  retire-hermes-kanban:
     priority: high
+  buzz-people-layer:
+    status: backlog
+    priority: medium
 
 # Imported routines land paused; activate them from the board once the agents
 # they target are verified working. Schedules use off-the-hour minutes.

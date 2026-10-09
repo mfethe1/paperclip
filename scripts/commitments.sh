@@ -33,7 +33,7 @@ while [[ $# -gt 0 ]]; do
     --today) TODAY="$2"; shift 2 ;;
     --out) OUT="$2"; shift 2 ;;
     --strict) STRICT=1; shift ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -50,7 +50,10 @@ need jq
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 AUTH=()
-if [[ -n "${PAPERCLIP_API_KEY:-}" ]]; then AUTH=(-H "authorization: Bearer ${PAPERCLIP_API_KEY}"); fi
+if [[ -n "${PAPERCLIP_API_KEY:-}" ]]; then  # header file, not argv: ps can't show the key
+  printf 'authorization: Bearer %s\n' "$PAPERCLIP_API_KEY" > "$WORK/auth.hdr"
+  AUTH=(-H "@$WORK/auth.hdr")
+fi
 
 # The only way this script talks to the board.
 api_get() { # path outfile -> returns 0 on HTTP 200

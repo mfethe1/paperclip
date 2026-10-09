@@ -18,10 +18,11 @@ Company: Fleet  (goals in COMPANY.md)
 
 - **Projects map to repos/products**, not to hosts. Host-specific work is an issue in
   Fleet Operations, or an issue assigned to the agent that runs on that host.
-- **Intake** is the single front door. Requests from Telegram, Discord, or Buzz become
-  Intake issues (by hand at first; via a Paperclip chat connector or routine webhook
-  later). The Chief of Staff triages each one within a day: outcome, acceptance criteria,
-  project, priority, owner, or close with a reason.
+- **Intake** is the single front door. Ask Hermes in Telegram to track something, and
+  it files an Intake issue assigned to the Chief of Staff, then replies with the
+  `FLE-` key (`paperclip-fleet` skill). Other channels file by hand for now. The Chief of
+  Staff triages each one within a day: outcome, acceptance criteria, project, priority,
+  owner, or close with a reason.
 
 ## Lifecycle
 

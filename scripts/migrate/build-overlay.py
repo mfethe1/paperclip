@@ -5,6 +5,12 @@
     workspace repoUrl per project
   * markdown checklists (TASK_QUEUE.md, BACKLOG.md, ...) -> one TASK.md per OPEN
     item ("- [ ]" or "- [>]"), filed under a project you choose
+  * card exports (Hermes Kanban, Buzz tasks) as JSON: a list of
+    {title, body?, status?, project?, priority?, source?}. Open cards only;
+    done/archived/cancelled cards are skipped. Status maps as: triage -> backlog,
+    todo/ready/running/review/blocked -> todo (the original status is recorded in
+    the body; the Chief of Staff assigns an owner). project is a board project
+    slug (default: intake).
 
 The overlay is written to exports/ (gitignored: it can contain private repo names
 and chat references) and imported into the EXISTING company with:
@@ -18,6 +24,7 @@ Staff to triage. Every task body records where it came from.
 Usage:
     build-overlay.py --projects fleet/projects.json \
         --checklist ~/openclaw-shared/workspace/TASK_QUEUE.md=intake \
+        --cards exports/kanban-cards.json \
         --since 2026-08-01 --out exports/overlay
 """
 
@@ -90,12 +97,51 @@ def title_for(text: str) -> str:
     return (title[:117] + "...") if len(title) > 120 else title
 
 
+CARD_STATUS = {
+    "triage": "backlog", "backlog": "backlog", "inbox": "backlog",
+    "todo": "todo", "ready": "todo", "running": "todo", "in_progress": "todo",
+    "doing": "todo", "review": "todo", "in_review": "todo", "blocked": "todo",
+}
+CARD_CLOSED = {"done", "archived", "cancelled", "canceled", "closed"}
+PRIORITIES = {"low", "medium", "high", "critical"}
+
+
+def load_cards(path: Path) -> list[dict]:
+    """Open cards from a JSON export, normalized. Raises ValueError on bad input."""
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(rows, list):
+        raise ValueError(f"{path}: expected a JSON list of cards")
+    cards: list[dict] = []
+    for i, row in enumerate(rows):
+        if not isinstance(row, dict) or not str(row.get("title") or "").strip():
+            raise ValueError(f"{path}: card {i} has no title")
+        raw_status = str(row.get("status") or "triage").strip().lower()
+        if raw_status in CARD_CLOSED:
+            continue
+        if raw_status not in CARD_STATUS:
+            raise ValueError(f"{path}: card {i} has unknown status {raw_status!r}")
+        priority = str(row.get("priority") or "").strip().lower()
+        cards.append({
+            "title": str(row["title"]).strip(),
+            "body": str(row.get("body") or "").strip(),
+            "status": CARD_STATUS[raw_status],
+            "was": raw_status,
+            "project": slugify(str(row.get("project") or "intake")),
+            "priority": priority if priority in PRIORITIES else None,
+            "source": str(row.get("source") or "").strip(),
+            "index": i,
+        })
+    return cards
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--projects", type=Path, help="JSON list of {slug,name,description,repoUrl,status,targetDate,lead}; "
                          "lead is the slug of an agent already on the board")
     ap.add_argument("--checklist", action="append", default=[], metavar="FILE=PROJECT_SLUG",
                     help="markdown checklist and the project slug its items belong to (repeatable)")
+    ap.add_argument("--cards", action="append", default=[], type=Path, metavar="FILE",
+                    help="JSON card export (Hermes Kanban, Buzz tasks); see the module docstring (repeatable)")
     ap.add_argument("--since", type=date.fromisoformat,
                     help="skip TASK_QUEUE items whose 'extracted' date is older than this")
     ap.add_argument("--out", type=Path, default=Path("exports/overlay"))
@@ -115,6 +161,15 @@ def main() -> int:
         if not sep or not slug:
             sys.exit(f"error: --checklist needs FILE=PROJECT_SLUG, got {spec!r}")
         projects.setdefault(slug, {"name": slug.replace("-", " ").title()})
+    card_sets: list[tuple[Path, list[dict]]] = []
+    for path in args.cards:
+        try:
+            cards = load_cards(path.expanduser())
+        except (ValueError, json.JSONDecodeError) as exc:
+            sys.exit(f"error: {exc}")
+        card_sets.append((path, cards))
+        for card in cards:
+            projects.setdefault(card["project"], {"name": card["project"].replace("-", " ").title()})
 
     ext_projects: dict[str, dict] = {}
     for slug, row in projects.items():
@@ -171,11 +226,38 @@ def main() -> int:
                 encoding="utf-8")
             counts[slug] = counts.get(slug, 0) + 1
 
+    ext_tasks: dict[str, dict] = {}
+    for path, cards in card_sets:
+        for card in cards:
+            digest = hashlib.sha1(f"{path.name}:{card['source']}:{card['title']}".encode()).hexdigest()[:8]
+            tslug = f"{slugify(title_for(card['title']), 40)}-{digest}"
+            if tslug in seen:
+                continue
+            seen.add(tslug)
+            source = card["source"] or f"`{path.name}` card {card['index']}"
+            body = ((card["body"] + "\n\n") if card["body"] else "") + (
+                f"## Source\n\n- Imported from {source}\n- Status there: `{card['was']}`\n\n"
+                "Triage: confirm this is still wanted, write acceptance criteria, "
+                "then assign it or close it with a reason.\n")
+            slug = card["project"]
+            tdir = args.out / "projects" / slug / "tasks" / tslug
+            tdir.mkdir(parents=True)
+            (tdir / "TASK.md").write_text(
+                f"---\nname: {yaml_str(title_for(card['title']))}\nslug: {tslug}\nproject: {slug}\n---\n\n{body}",
+                encoding="utf-8")
+            ext = {"status": card["status"]}
+            if card["priority"]:
+                ext["priority"] = card["priority"]
+            ext_tasks[tslug] = ext
+            counts[slug] = counts.get(slug, 0) + 1
+
     (args.out / "COMPANY.md").write_text(
         "---\nschema: agentcompanies/v1\nname: Fleet import overlay\nslug: fleet-import-overlay\n"
         "description: Projects and backlog imported from existing fleet queues. Import into the existing company only.\n"
         "---\n\nGenerated by scripts/migrate/build-overlay.py. Not committed.\n", encoding="utf-8")
     ext_doc = {"schema": "paperclip/v1", "schemaVersion": 7, "projects": ext_projects}
+    if ext_tasks:
+        ext_doc["tasks"] = ext_tasks
     (args.out / ".paperclip.yaml").write_text(pcyaml.dump(ext_doc), encoding="utf-8")
 
     print(f"overlay written to {args.out}")

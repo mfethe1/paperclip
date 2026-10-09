@@ -84,27 +84,31 @@ boards, the Mack Hermes bridge, NATS as transport, peer-relay for execution, plu
 `TASK_QUEUE.md` files. The fleet's own rule is *don't create a competing queue.*
 Adding Paperclip without an authority decision would create exactly that.
 
-**Recommendation** (pending Michael's approval; tracked as the `decide-task-authority` task):
+**Decided** by Michael on 2026-10-09:
 
 | State | Authority | Notes |
 |---|---|---|
 | Goals, projects, issues, assignment, review/approval decisions, budgets, routines that wake agents | **Paperclip** | One owner per issue via checkout; reviewer ≠ executor enforced by the execution policy the Chief of Staff sets on each issue at triage; approvals are first-class objects with an audit trail |
 | Code | Git/GitHub | PRs are linked to issues as work products |
-| Conversation, notifications, presence, signed identity | Buzz, Telegram, Discord | Messages link to Paperclip issues and never carry task state |
+| Reaching people: notifications, questions, asks that need a person, presence, signed identity | **Buzz** (the people layer), Telegram | Agents, and later Paperclip itself, talk to people in the organization through Buzz. Messages link to Paperclip issues and never carry task state. Design: `buzz-people-layer` task |
+| Requests from Michael in chat | Telegram → Hermes on Mack → Paperclip Intake | Hermes files them with its board key (`paperclip-fleet` skill). No new bot, no public endpoint |
 | Transport and remote execution | Tailscale, SSH, NATS, peer-relay | Plumbing only; never a source of truth |
-| Hermes Kanban, CCR loop board, `TASK_QUEUE.md`, `BACKLOG.md` | **Retired for project work** after migration | Imported via `scripts/migrate/` and frozen; cron-driven host maintenance can stay in Hermes cron |
+| Hermes Kanban, CCR loop board, `TASK_QUEUE.md`, `BACKLOG.md` | **Retired for project work** | Open cards imported via `scripts/migrate/build-overlay.py --cards`, then frozen (`retire-hermes-kanban` task). Cron-driven host maintenance stays in Hermes cron |
 
-Why Paperclip rather than keeping Buzz as the authority: Paperclip already implements
+Why Paperclip rather than Buzz as the work authority: Paperclip already implements
 what the fleet has been building by hand. That includes org chart and delegation,
 checkout-based ownership, review and approval stages that exclude the executor, budgets,
 routines with concurrency and catch-up policies, per-run logs, and native adapters for
-Hermes, OpenClaw, Claude Code, and Codex. Buzz stays valuable as the messaging and
-identity layer. **What would change this recommendation:** if Buzz's signed approvals
-bound to chat threads are a hard requirement that Paperclip approvals can't satisfy,
-keep Buzz as the approval authority and have Paperclip link to it.
+Hermes, OpenClaw, Claude Code, and Codex. Buzz keeps the job it is best at: connecting
+agents and people.
 
-Until the decision is approved, Paperclip runs alongside the existing stack. Nothing
-existing is disabled, and imported agents and routines stay paused.
+**How Hermes on Mack fits.** Mack's main Hermes gateway joins as a `hermes_gateway` agent.
+Paperclip wakes it over HTTPS (Tailscale Serve) with the issue and a run id. Hermes does
+the work and closes the issue with its own board key, which `join-hermes.sh claim` puts
+in `~/.hermes/.env`. Paperclip accepts an agent's issue writes only with a run id from
+that agent's own run, so outside a run Hermes can file new issues (Telegram intake) and
+read the board, but can't change existing issues. Writes to issues other than the one a
+run was woken for are capped at 20 per run.
 
 ## Failure modes and what handles them
 

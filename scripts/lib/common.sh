@@ -213,3 +213,57 @@ pc() {
 paperclip_config_path() {
   echo "${PAPERCLIP_HOME:-$HOME/.paperclip}/instances/${PAPERCLIP_INSTANCE_ID:-default}/config.json"
 }
+
+# --- dotenv files (Hermes's ~/.hermes/.env) ---------------------------------
+# Values travel through the environment, never argv, so `ps` can't show them.
+
+hermes_home() { echo "${HERMES_HOME:-$HOME/.hermes}"; }
+
+# dotenv_get FILE KEY: print KEY's value (last assignment wins), unquoted.
+dotenv_get() {
+  [[ -f "$1" ]] || return 0
+  K="$2" awk '
+    BEGIN { k = ENVIRON["K"] }
+    {
+      line = $0
+      sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+      if (index(line, k "=") == 1) {
+        v = substr(line, length(k) + 2)
+        sub(/[[:space:]]+$/, "", v)
+        if (v ~ /^".*"$/ || v ~ /^'\''.*'\''$/) v = substr(v, 2, length(v) - 2)
+        val = v
+      }
+    }
+    END { if (val != "") print val }' "$1"
+}
+
+# dotenv_set FILE KEY <<<"value": set KEY to the value read from stdin, replacing
+# the first assignment and dropping later ones. Keeps the file 0600 and its inode.
+dotenv_set() {
+  local file="$1" key="$2" val tmp
+  val="$(cat)"
+  [[ -f "$file" ]] || { (umask 077 && : > "$file"); }
+  tmp="$(mktemp "${TMPDIR:-/tmp}/dotenv.XXXXXX")"
+  K="$key" V="$val" awk '
+    BEGIN { k = ENVIRON["K"]; v = ENVIRON["V"]; done = 0 }
+    {
+      line = $0
+      sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+      if (index(line, k "=") == 1) { if (!done) { print k "=" v; done = 1 } ; next }
+      print
+    }
+    END { if (!done) print k "=" v }' "$file" > "$tmp"
+  cat "$tmp" > "$file"
+  rm -f "$tmp"
+  chmod 600 "$file"
+}
+
+# Back up a dotenv file next to itself (0600) before changing it.
+dotenv_backup() {
+  [[ -f "$1" ]] || return 0
+  local b
+  b="$1.bak-$(date +%Y%m%d-%H%M%S)"
+  (umask 077 && cp -p "$1" "$b")
+  chmod 600 "$b"
+  log "backed up $1 to $b"
+}

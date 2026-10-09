@@ -23,6 +23,7 @@ deployment code, the company definition, and docs.
 | Inventory reports | `migration/out/` (gitignored) |
 | Agent credentials | Paperclip secrets (`paperclipai secrets create --value-env ...`), bound to agent env inputs |
 | Claimed agent keys on a host | `~/.config/paperclip-fleet/` (0600, written by `join-hermes.sh`) |
+| The Hermes agent's board key and the Hermes API server key | `~/.hermes/.env` on the Hermes host (0600; backed up before each change) |
 
 **Enforcement:**
 - `tools/validate_company.py` fails on token patterns, private keys, tailnet names and
@@ -59,9 +60,27 @@ repo private does not un-leak it.
 - **The real merge gate is GitHub.** Agents run `gh`/`git` with their token directly,
   which bypasses Paperclip's tool policies. Require reviews with no bypass on the default
   branch of every repo the Builder touches.
-- **Codex sandbox.** Paperclip creates `codex_local` agents with
-  `dangerouslyBypassApprovalsAndSandbox: true` by default. Whether the Verifier keeps
-  that is an explicit decision; record it here when made.
-- **Funnel stays off.** If Telegram intake or internet webhook senders are approved, the
-  Funnel is limited to the one path they need (`/api/chat-webhooks/` or
-  `/api/routine-triggers/public/`), never the whole board.
+- **Codex sandbox (decided 2026-10-09): the Verifier stays sandboxed.** It runs Codex's
+  workspace-write sandbox with network on. It can edit and run tests inside its own
+  workspace and reach GitHub, but it can't write anywhere else on the board host
+  (`~/.ssh`, launch agents, other repos, Paperclip's own data). The Verifier runs code
+  from the PRs it reviews, so it is the agent most exposed to untrusted input. The
+  package sets `dangerouslyBypassApprovalsAndSandbox: false` explicitly:
+  - The default ACP engine already keeps the sandbox.
+  - The setting holds if the engine is switched to `cli`.
+  - It also holds if someone recreates the agent in the UI, where Paperclip's default
+    is bypass.
+
+  If a review legitimately needs more access, give that issue to the Builder.
+- **Claude agents (Builder, Chief of Staff, Fleet Ops) are not OS-sandboxed.**
+  Paperclip's filesystem and network confinement needs Bubblewrap, which is
+  Linux-only, and the board host is a Mac. Their limits are their instructions, the
+  approval rules, per-agent fine-grained GitHub tokens, and branch protection.
+- **Hermes's board key** lives in `~/.hermes/.env` on Mack (0600), written by
+  `join-hermes.sh claim`, next to Hermes's other keys. It is an agent key, not a board
+  key: it can file and read issues, and change an issue only from inside a Paperclip
+  run of that agent. Rotate it by revoking the key on the board and re-running the join.
+- **Funnel stays off.** Telegram intake goes through Hermes, which polls Telegram, so the
+  board needs no public endpoint. If Paperclip's own chat connector or internet webhook
+  senders are ever approved, the Funnel is limited to the one path they need
+  (`/api/chat-webhooks/` or `/api/routine-triggers/public/`), never the whole board.

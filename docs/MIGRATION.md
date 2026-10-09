@@ -49,21 +49,30 @@ decision, and some branches (brand/private) must never go to a public remote. Kn
 to look for: the FLEET-LEARNING-001 pilot worktree, unpushed Buzz work under
 `~/.buzz/REPOS`, and the archived llama.cpp fork commits.
 
-**1d. Hermes Kanban and Buzz tasks:** read-only. The Chief of Staff lists open cards
-per board and proposes a mapping (`import-mack-work` task). They are imported in bulk only
-after Phase 3 is approved; until then the two systems would both be authoritative.
+**1d. Hermes Kanban cards** (approved 2026-10-09, `retire-hermes-kanban` task). The
+Hermes agent exports open cards to JSON, following its `paperclip-fleet` skill, §4. Then:
+```sh
+scripts/migrate/build-overlay.py --cards exports/kanban-cards.json --out exports/kanban-overlay
+scripts/import-company.py exports/kanban-overlay --company-id <id> \
+  --include projects,issues --collision skip --dry-run      # then without --dry-run
+```
+Cards in `triage` land in backlog. Cards in `todo`, `ready`, `running`, `review` and
+`blocked` land in todo, unassigned, with their old status and source recorded. Done and
+archived cards are skipped. **Buzz tasks** are listed and proposed case by case; Buzz
+itself stays as the people layer.
 
 ## Phase 2: connect the other hosts
 
 `docs/RUNBOOK.md` §5–6: OpenClaw on Rosie, Hermes gateways. Each join is one approval
 listing the exact host commands.
 
-## Phase 3: cutover (needs approval: `decide-task-authority`)
+## Phase 3: cutover (approved 2026-10-09 for Hermes Kanban)
 
 In order, each step verified before the next:
 
 1. New requests go to Intake (Chief of Staff confirms chat requests become issues).
-2. Bulk-import open Kanban cards and Buzz tasks; freeze those boards (read-only notice).
+2. Bulk-import open Kanban cards (1d); freeze those boards (read-only notice). Buzz
+   stays live as the people layer.
 3. Point the notification crons (Telegram threads, Buzz `#fleet`) at Paperclip issue
    links instead of Kanban cards.
 4. Disable superseded crons **one at a time**, each only after its Paperclip routine

@@ -13,7 +13,8 @@ is specific to us:
 |---|---|
 | `companies/fleet/` | The company as code: org chart, agents, projects, routines, and the `fleet-conventions` skill (Agent Companies format, importable) |
 | `scripts/control-plane/` | Preflight, then install and reconcile Paperclip on the board host: authenticated, loopback-only, published on the tailnet via Tailscale Serve |
-| `scripts/node/` | Per-host: publish a Hermes/OpenClaw gateway to the tailnet, join it to the board |
+| `scripts/node/` | Per-host: turn on Hermes's API server, publish a Hermes/OpenClaw gateway to the tailnet, join it to the board |
+| `hermes/skills/` | The `paperclip-fleet` skill installed into Hermes at join: close issues from a run, file Telegram requests into Intake, answer "what's late" |
 | `scripts/migrate/` | Bring existing work in: repo roster → projects, `TASK_QUEUE.md`/`BACKLOG.md` → issues, unpushed-work inventory |
 | `scripts/import-company.py` | Import a package with every agent and routine **paused** (the stock CLI starts them live) |
 | `scripts/export-company.sh` | Export the live board, normalize it, diff it against `companies/` |
@@ -21,7 +22,7 @@ is specific to us:
 | `scripts/diagnose.sh` | Agent run failures grouped by cause, with the fix for each (read-only) |
 | `scripts/commitments.sh` | Overdue and at-risk projects, `Due:` issues, stalled and blocked work (read-only) |
 | `tools/` | Package validator (mirrors Paperclip's importer and YAML parser), export normalizer |
-| `docs/` | [Architecture](docs/ARCHITECTURE.md), [Runbook](docs/RUNBOOK.md), [Project management](docs/PROJECT-MANAGEMENT.md), [Migration](docs/MIGRATION.md), [Security](docs/SECURITY.md) |
+| `docs/` | [Go-live checklist](docs/GO-LIVE.md), [Architecture](docs/ARCHITECTURE.md), [Runbook](docs/RUNBOOK.md), [Project management](docs/PROJECT-MANAGEMENT.md), [Migration](docs/MIGRATION.md), [Security](docs/SECURITY.md), [Troubleshooting](docs/TROUBLESHOOTING.md) |
 
 ## Status
 
@@ -32,8 +33,9 @@ is specific to us:
 | Hermes join flow (invite → request → approve → claim) | **Verified** against a live instance with a stub gateway |
 | Commitments: project leads and target dates on import, `commitments.sh`, weekday check routine | **Verified** against a live instance (report also run with an agent key); CI imports and runs it |
 | Control plane installed on the board host (Rosie) | **Not done.** Run `scripts/control-plane/preflight.sh`, then `install.sh --install-node`, on Rosie |
-| Remote agents joined (Rosie OpenClaw, Hermes gateways) | **Not done.** Host changes need approval, see `docs/RUNBOOK.md` |
-| Which system is the authority for task state (Paperclip vs Buzz/Kanban) | **Open decision.** See [Architecture § Authority](docs/ARCHITECTURE.md#authority-where-each-kind-of-state-lives) |
+| Hermes on Mack: enable API, publish, join, Hermes closes its own issues, Telegram intake | **Scripted and verified** end to end against a stand-in Hermes (CI: `tests/hermes-loop-smoke.sh`); **not yet run on Mack**. Steps: [Go-live](docs/GO-LIVE.md) |
+| Rosie OpenClaw joined | **Not done.** See `docs/RUNBOOK.md` §6 |
+| Where work is tracked | **Decided 2026-10-09:** Paperclip; Hermes Kanban retired; Buzz is the people layer. See [Architecture § Authority](docs/ARCHITECTURE.md#authority-where-each-kind-of-state-lives) |
 
 ## Quick start (on the board host: Rosie)
 
